@@ -86,7 +86,7 @@ st.markdown(
     "Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng Nhung Tây Nguyên"
 )
 
-# Khởi tạo dữ liệu mẫu cho công việc
+# Khởi tạo dữ liệu mẫu cho công việc và chuẩn hóa tên cột
 if "df_works" not in st.session_state:
     st.session_state.df_works = pd.DataFrame(
         {
@@ -140,6 +140,12 @@ if "df_works" not in st.session_state:
                 "Không có",
             ],
         }
+    )
+
+# Tự động đồng bộ đổi tên cột cũ thành cột mới nếu session đang lưu bản cũ
+if "Dự Án" in st.session_state.df_works.columns:
+    st.session_state.df_works = st.session_state.df_works.rename(
+        columns={"Dự Án": "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"}
     )
 
 # Khởi tạo kho lưu trữ báo cáo hiện trường và chat nhóm
