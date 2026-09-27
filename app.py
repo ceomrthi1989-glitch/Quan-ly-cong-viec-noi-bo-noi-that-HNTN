@@ -32,6 +32,11 @@ DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
 ]
 
+# Biến toàn cục lưu trữ danh sách thành viên online (chia sẻ trên server)
+if "ONLINE_USERS" not in globals():
+    global ONLINE_USERS
+    ONLINE_USERS = {}
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.current_user = None
@@ -63,6 +68,8 @@ if not st.session_state.logged_in:
             if mat_khau_chung == "hongnhung2020":
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
+                # Ghi nhận vào danh sách online kèm thời gian
+                ONLINE_USERS[selected_account] = datetime.datetime.now()
                 st.success("Đăng nhập thành công!")
                 st.rerun()
             else:
@@ -73,12 +80,28 @@ if not st.session_state.logged_in:
 
     st.stop()
 
+# Cập nhật thời gian hoạt động của user đang đăng nhập
+if st.session_state.current_user:
+    ONLINE_USERS[st.session_state.current_user] = datetime.datetime.now()
+
 # --- SAU KHI ĐĂNG NHẬP THÀNH CÔNG ---
 st.sidebar.success(f"👤 Xin chào: **{st.session_state.current_user}**")
 if st.sidebar.button("Đăng Xuất"):
+    if st.session_state.current_user in ONLINE_USERS:
+        del ONLINE_USERS[st.session_state.current_user]
     st.session_state.logged_in = False
     st.session_state.current_user = None
     st.rerun()
+
+# Hiển thị danh sách thành viên đang trực tuyến ngay trên Sidebar
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🟢 Thành Viên Đang Trực Tuyến")
+if ONLINE_USERS:
+    for u_name in list(ONLINE_USERS.keys()):
+        st.sidebar.markdown(f"• {u_name}")
+else:
+    st.sidebar.info("Chưa có thành viên nào online.")
+st.sidebar.markdown("---")
 
 # Tiêu đề ứng dụng
 st.title("🏆 HongNhungTN - Hệ Thống Quản Lý Công Việc & KPI Nội Bộ")
@@ -142,13 +165,11 @@ if "df_works" not in st.session_state:
         }
     )
 
-# Tự động đồng bộ đổi tên cột cũ thành cột mới nếu session đang lưu bản cũ
 if "Dự Án" in st.session_state.df_works.columns:
     st.session_state.df_works = st.session_state.df_works.rename(
         columns={"Dự Án": "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"}
     )
 
-# Khởi tạo kho lưu trữ báo cáo hiện trường và chat nhóm
 if "chat_reports" not in st.session_state:
     st.session_state.chat_reports = []
 if "internal_messages" not in st.session_state:
