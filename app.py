@@ -64,7 +64,6 @@ if not st.session_state.logged_in:
         submit_login = st.form_submit_button("Đăng Nhập Hệ Thống")
 
         if submit_login:
-            # Mật khẩu nội bộ chung cho toàn công ty
             if mat_khau_chung == "hongnhung2020":
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
@@ -108,7 +107,7 @@ st.markdown(
     "Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng Nhung Tây Nguyên"
 )
 
-# Khởi tạo dữ liệu mẫu cho công việc và chuẩn hóa tên cột
+# Khởi tạo dữ liệu mẫu cho công việc
 if "df_works" not in st.session_state:
     st.session_state.df_works = pd.DataFrame(
         {
@@ -169,17 +168,36 @@ if "Dự Án" in st.session_state.df_works.columns:
         columns={"Dự Án": "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"}
     )
 
+# Khởi tạo dữ liệu chấm công mẫu theo ngày trong tháng hiện tại
+if "df_cham_cong" not in st.session_state:
+    ngay_hom_nay = datetime.date.today()
+    # Tạo sẵn bảng chấm công mẫu cho các nhân sự chính thức
+    data_cc = []
+    for nv in DANH_SACH_NHAN_SU_CHINH_THUC:
+        data_cc.append(
+            {
+                "Nhân sự / Đội ngũ": nv,
+                "Ngày 01": "X",
+                "Ngày 02": "X",
+                "Ngày 03": "/",
+                "Ngày 04": "X",
+                "Ngày 05": "P",
+            }
+        )
+    st.session_state.df_cham_cong = pd.DataFrame(data_cc)
+
 if "chat_reports" not in st.session_state:
     st.session_state.chat_reports = []
 if "internal_messages" not in st.session_state:
     st.session_state.internal_messages = []
 
-# Menu điều hướng với "Giao Việc Mới & Thiết Lập KPI" lên đầu tiên
+# Menu điều hướng với Chấm công tự động ở vị trí thứ 2
 st.sidebar.title("🛠️ Điều Hướng Quản Lý")
 menu = st.sidebar.radio(
     "Chọn Chức Năng:",
     [
         "➕ Giao Việc Mới & Thiết Lập KPI",
+        "📅 Bảng Chấm Công Tự Động",
         "📊 Theo Dõi & Xác Nhận Công Việc",
         "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)",
         "💭 Phòng Chat Trao Đổi Công Việc Riêng",
@@ -250,7 +268,46 @@ if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                     " nội thất."
                 )
 
-# --- 2. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
+# --- 2. BẢNG CHẤM CÔNG TỰ ĐỘNG ---
+elif menu == "📅 Bảng Chấm Công Tự Động":
+    st.subheader(
+        "📅 Bảng Chấm Công & Tính Tổng Ngày Công Thực Tế Của Nhân Sự"
+    )
+    st.markdown(
+        "**Quy ước ký hiệu:** `X` = Đi làm đủ công (1 ngày) | `/` = Đi làm"
+        " nửa ngày (0.5 ngày) | `P` = Vắng có phép | `V` = Vắng không phép | `B`"
+        " = Bỏ việc giữa chừng"
+    )
+
+    # Tính toán tổng ngày công thực tế (X = 1, / = 0.5)
+    df_cc = st.session_state.df_cham_cop = st.session_state.df_cham_cong.copy()
+
+    def tinh_tong_cong(row):
+        tong = 0.0
+        for col in df_cc.columns:
+            if col != "Nhân sự / Đội ngũ":
+                val = str(row[col]).strip().upper()
+                if val == "X":
+                    tong += 1.0
+                elif val == "/":
+                    tong += 0.5
+        return tong
+
+    df_cc["Tổng Ngày Công Thực Tế"] = df_cc.apply(tinh_tong_cong, axis=1)
+
+    # Hiển thị bảng chấm công có thể chỉnh sửa trực tiếp
+    st.markdown("### ✍️ Bảng Ký Hiệu Chấm Công Chi Tiết")
+    edited_df = st.data_editor(
+        df_cc, use_container_width=True, num_rows="fixed"
+    )
+    st.session_state.df_cham_cong = edited_df
+
+    st.success(
+        "Hệ thống tự động tính toán tổng ngày công thực tế (bao gồm 'X' và '/')"
+        " cho từng thành viên!"
+    )
+
+# --- 3. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
 elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
     st.subheader("📊 Bảng Theo Dõi Tiến Độ & Xác Nhận Công Việc Toàn Công Ty")
 
@@ -323,7 +380,7 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
                     f" {ma_viec_chon}"
                 )
 
-# --- 3. BÁO CÁO HIỆN TRƯỜNG ---
+# --- 4. BÁO CÁO HIỆN TRƯỜNG ---
 elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
     st.subheader(
         "💬 Kênh Báo Cáo Công Việc Hàng Ngày, Gửi Hình Ảnh & Video Công Trình"
@@ -403,7 +460,7 @@ elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
                             st.video(file)
             st.markdown("---")
 
-# --- 4. PHÒNG CHAT TRAO ĐỔI CÔNG VIỆC RIÊNG ---
+# --- 5. PHÒNG CHAT TRAO ĐỔI CÔNG VIỆC RIÊNG ---
 elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
     st.subheader("💭 Kênh Nhắn Tin & Trao Đổi Công Việc Nội Bộ (Group Chat)")
 
@@ -434,7 +491,7 @@ elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
         )
         st.markdown("---")
 
-# --- 5. QUẢN LÝ TIÊU CHÍ KPI ---
+# --- 6. QUẢN LÝ TIÊU CHÍ KPI ---
 elif menu == "📋 Quản Lý & Xem Tiêu Chí KPI":
     st.subheader("📋 Danh Mục & Thiết Lập Tiêu Chí KPI Chuẩn Của Công Ty")
     st.dataframe(
@@ -476,7 +533,7 @@ elif menu == "📋 Quản Lý & Xem Tiêu Chí KPI":
                     f"Đã cập nhật tiêu chí KPI thành công cho mã việc: {ma_v_tc}"
                 )
 
-# --- 6. CHẤM ĐIỂM & THƯỞNG PHẠT KPI ---
+# --- 7. CHẤM ĐIỂM & THƯỞNG PHẠT KPI ---
 elif menu == "⭐ Chấm Điểm & Thưởng/Phạt KPI":
     st.subheader(
         "⭐ Quản Lý Chấm Điểm KPI, Mức Thưởng & Phạt Cho Từng Nhân Sự"
