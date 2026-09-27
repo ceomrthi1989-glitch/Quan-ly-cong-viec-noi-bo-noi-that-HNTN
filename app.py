@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import pandas as pd
 import streamlit as st
@@ -168,30 +169,12 @@ if "Dự Án" in st.session_state.df_works.columns:
         columns={"Dự Án": "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"}
     )
 
-# Khởi tạo dữ liệu chấm công mẫu theo ngày trong tháng hiện tại
-if "df_cham_cong" not in st.session_state:
-    ngay_hom_nay = datetime.date.today()
-    # Tạo sẵn bảng chấm công mẫu cho các nhân sự chính thức
-    data_cc = []
-    for nv in DANH_SACH_NHAN_SU_CHINH_THUC:
-        data_cc.append(
-            {
-                "Nhân sự / Đội ngũ": nv,
-                "Ngày 01": "X",
-                "Ngày 02": "X",
-                "Ngày 03": "/",
-                "Ngày 04": "X",
-                "Ngày 05": "P",
-            }
-        )
-    st.session_state.df_cham_cong = pd.DataFrame(data_cc)
-
 if "chat_reports" not in st.session_state:
     st.session_state.chat_reports = []
 if "internal_messages" not in st.session_state:
     st.session_state.internal_messages = []
 
-# Menu điều hướng với Chấm công tự động ở vị trí thứ 2
+# Menu điều hướng
 st.sidebar.title("🛠️ Điều Hướng Quản Lý")
 menu = st.sidebar.radio(
     "Chọn Chức Năng:",
@@ -271,40 +254,143 @@ if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
 # --- 2. BẢNG CHẤM CÔNG TỰ ĐỘNG ---
 elif menu == "📅 Bảng Chấm Công Tự Động":
     st.subheader(
-        "📅 Bảng Chấm Công & Tính Tổng Ngày Công Thực Tế Của Nhân Sự"
+        "📅 Bảng Chấm Công Tự Động & Quy Định Giờ Làm Việc Nội Bộ"
     )
+
+    with st.expander("📌 Xem Quy Định Chấm Công & Giờ Làm Việc Công Ty"):
+        st.markdown(
+            """
+        * **Ký hiệu chấm công:** 
+          * `X`: Đi làm đủ công (1 ngày)
+          * `/`: Đi làm nửa ngày (0.5 ngày)
+          * `P`: Vắng có phép 
+          * `v`: Vắng không phép
+          * `B`: Bỏ việc giữa chừng
+        * **Cảnh báo tự động:**
+          * 🔴 **Tên bôi đỏ:** Vắng không phép `v` > 2 ngày HOẶC Vắng có phép `P` > 6 ngày trong tháng.
+          * 🟡 **Tên bôi vàng:** Có ký hiệu `B` (Bỏ việc giữa chừng - Cảnh báo kỷ luật).
+        * **Quy định giờ làm việc & Xử lý đi trễ:**
+          * **Ca Sáng:** 07h30 đến 11h30 (Báo công trước 07h30, trễ dưới 10 phút châm chước, trễ từ 15 phút trở lên phạt trừ **100k** sung quỹ văn hóa nội bộ).
+          * **Ca Chiều:** 13h30 đến 17h30 (Báo công trước 13h30, trễ dưới 10 phút châm chước, trễ từ 15 phút trở lên phạt trừ **100k** sung quỹ văn hóa nội bộ).
+        """
+        )
+
+    # Chọn Tháng và Năm theo lịch
+    col_cc1, col_cc2 = st.columns(2)
+    with col_cc1:
+        selected_year = st.selectbox(
+            "Chọn Năm", range(datetime.date.today().year, 2024, -1)
+        )
+    with col_cc2:
+        selected_month = st.selectbox("Chọn Tháng", range(1, 13), index=9)  # Mặc định tháng 10
+
+    # Lấy số ngày trong tháng được chọn
+    num_days = calendar.monthrange(selected_year, selected_month)[1]
+    day_columns = [f"Ngày {d:02d}" for d in range(1, num_days + 1)]
+
+    # Khởi tạo dữ liệu chấm công cho tháng nếu chưa có trong session
+    cham_cong_key = f"cc_{selected_year}_{selected_month}"
+    if cham_cong_key not in st.session_state:
+        data_cc = []
+        for nv in DANH_SACH_NHAN_SU_CHINH_THUC:
+            row_dict = {"Nhân sự / Đội ngũ": nv}
+            for d_col in day_columns:
+                row_dict[d_col] = "X"  # Mặc định đi làm đủ công
+            data_cc.append(row_dict)
+        st.session_state[cham_cong_key] = pd.DataFrame(data_cc)
+
+    df_cc_hien_tai = st.session_state[cham_cong_key]
+
+    # Cấu hình cột cho phép chọn lựa ký hiệu trực tiếp trên bảng (st.data_editor)
+    column_config = {
+        "Nhân sự / Đội ngũ": st.column_config.TextColumn(
+            "Nhân sự / Đội ngũ", disabled=True
+        )
+    }
+    for d_col in day_columns:
+        column_config[d_col] = st.column_config.SelectboxColumn(
+            d_col, options=["X", "/", "P", "v", "B"], required=True
+        )
+
     st.markdown(
-        "**Quy ước ký hiệu:** `X` = Đi làm đủ công (1 ngày) | `/` = Đi làm"
-        " nửa ngày (0.5 ngày) | `P` = Vắng có phép | `V` = Vắng không phép | `B`"
-        " = Bỏ việc giữa chừng"
+        f"### ✍️ Bảng Chấm Công Tháng {selected_month}/{selected_year}"
     )
-
-    # Tính toán tổng ngày công thực tế (X = 1, / = 0.5)
-    df_cc = st.session_state.df_cham_cop = st.session_state.df_cham_cong.copy()
-
-    def tinh_tong_cong(row):
-        tong = 0.0
-        for col in df_cc.columns:
-            if col != "Nhân sự / Đội ngũ":
-                val = str(row[col]).strip().upper()
-                if val == "X":
-                    tong += 1.0
-                elif val == "/":
-                    tong += 0.5
-        return tong
-
-    df_cc["Tổng Ngày Công Thực Tế"] = df_cc.apply(tinh_tong_cong, axis=1)
-
-    # Hiển thị bảng chấm công có thể chỉnh sửa trực tiếp
-    st.markdown("### ✍️ Bảng Ký Hiệu Chấm Công Chi Tiết")
-    edited_df = st.data_editor(
-        df_cc, use_container_width=True, num_rows="fixed"
+    edited_cham_cong = st.data_editor(
+        df_cc_hien_tai,
+        column_config=column_config,
+        use_container_width=True,
+        key=f"editor_{cham_cong_key}",
     )
-    st.session_state.df_cham_cong = edited_df
+    st.session_state[cham_cong_key] = edited_cham_cong
 
-    st.success(
-        "Hệ thống tự động tính toán tổng ngày công thực tế (bao gồm 'X' và '/')"
-        " cho từng thành viên!"
+    # Tính toán tổng ngày công và kiểm tra điều kiện cảnh báo (Đỏ / Vàng)
+    st.markdown("### 📊 Tổng Hợp Ngày Công Thực Tế & Cảnh Báo Kỷ Luật")
+
+    tong_ket_data = []
+    for index, row in edited_cham_cong.iterrows():
+        nv_name = row["Nhân sự / Đội ngũ"]
+        cong_thuc_te = 0.0
+        dem_v_khong_phep = 0
+        dem_p_co_phep = 0
+        co_bo_viec = False
+
+        for d_col in day_columns:
+            val = str(row[d_col]).strip()
+            if val == "X":
+                cong_thuc_te += 1.0
+            elif val == "/":
+                cong_thuc_te += 0.5
+            elif val == "v":
+                dem_v_khong_phep += 1
+            elif val == "P":
+                dem_p_co_phep += 1
+            elif val == "B":
+                co_bo_viec = True
+
+        # Xác định trạng thái cảnh báo
+        trang_thai = "Bình thường (Đạt)"
+        if co_bo_viec:
+            trang_thai = (
+                "🟡 CẢNH BÁO KỶ LUẬT: Bỏ việc giữa chừng (Bôi vàng)"
+            )
+        elif dem_v_khong_phep > 2 or dem_p_co_phep > 6:
+            trang_thai = (
+                "🔴 CẢNH BÁO VI PHẠM: Quá hạn vắng cho phép/không phép (Bôi"
+                " đỏ)"
+            )
+
+        tong_ket_data.append(
+            {
+                "Nhân sự / Đội ngũ": nv_name,
+                "Tổng Ngày Công Thực Tế": cong_thuc_te,
+                "Vắng Không Phép (v)": dem_v_khong_phep,
+                "Vắng Có Phép (P)": dem_p_co_phep,
+                "Tình Trạng & Cảnh Báo": trang_thai,
+            }
+        )
+
+    df_tong_ket = pd.DataFrame(tong_ket_data)
+
+    # Hàm định dạng màu sắc bôi đỏ / bôi vàng theo yêu cầu
+    def highlight_rows(row):
+        if "CẢNH BÁO KỶ LUẬT" in row["Tình Trạng & Cảnh Báo"]:
+            return ["background-color: #fff3cd"] * len(
+                row
+            )  # Màu vàng cảnh báo
+        elif "CẢNH BÁO VI PHẠM" in row["Tình Trạng & Cảnh Báo"]:
+            return ["background-color: #f8d7da"] * len(
+                row
+            )  # Màu đỏ vi phạm
+        return [""] * len(row)
+
+    st.dataframe(
+        df_tong_ket.style.apply(highlight_rows, axis=1),
+        use_container_width=True,
+    )
+    st.info(
+        "💡 Kế toán click vào các ô trong bảng bên trên để thay đổi ký hiệu chấm"
+        " công, hệ thống sẽ tự động tính toán tổng ngày công thực tế (gồm 'X'"
+        " và '/') cùng các mốc cảnh báo kỷ luật!"
     )
 
 # --- 3. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
