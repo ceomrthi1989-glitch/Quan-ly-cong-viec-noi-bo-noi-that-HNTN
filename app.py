@@ -59,16 +59,16 @@ if not st.session_state.logged_in:
         submit_login = st.form_submit_button("Đăng Nhập Hệ Thống")
 
         if submit_login:
-            # Mật khẩu nội bộ chung cho toàn công ty (Bạn có thể đổi thành bất kỳ dãy số nào, ví dụ: '8888' hoặc 'hungnhungtn')
-            if mat_khau_chung == "123" or mat_khau_chung == "8888":
+            # Mật khẩu nội bộ chung cho toàn công ty
+            if mat_khau_chung == "hongnhung2020":
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
                 st.success("Đăng nhập thành công!")
                 st.rerun()
             else:
                 st.error(
-                    "Mật khẩu nội bộ không chính xác! Vui lòng liên hệ Giám"
-                    " Đốc để nhận mật khẩu."
+                    "Mật khẩu nội bộ không chính xác! Vui lòng kiểm tra lại mật"
+                    " khẩu công ty."
                 )
 
     st.stop()
@@ -91,7 +91,7 @@ if "df_works" not in st.session_state:
     st.session_state.df_works = pd.DataFrame(
         {
             "Mã Việc": ["V01", "V02", "V03", "V04"],
-            "Dự Án": [
+            "Tên Công trình/Sản phẩm/Hạng mục Nội Thất": [
                 "Biệt Thự Phố - C.Hạnh",
                 "Căn Hộ - A.Tuấn",
                 "Xưởng Mộc HNTN",
@@ -250,7 +250,8 @@ elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
                 disabled=True,
             )
             ten_du_an = st.text_input(
-                "Tên Dự Án hoặc Hạng Mục (VD: Tủ bếp nhà anh Nam)"
+                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất (VD: Tủ bếp nhà anh"
+                " Nam)"
             )
         with c2:
             loai_bc = st.selectbox(
@@ -295,7 +296,7 @@ elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
     for report in st.session_state.chat_reports:
         with st.container():
             st.info(
-                f"👤 **{report['nguoi_gui']}** | 📁 **Dự án:**"
+                f"👤 **{report['nguoi_gui']}** | 📁 **Công trình/Hạng mục:**"
                 f" {report.get('du_an', 'Chung')} | ⏰ *{report['thoi_gian']}*"
                 f" | 🏷️ *[{report['loai']}]*"
             )
@@ -352,7 +353,7 @@ elif menu == "📋 Quản Lý & Xem Tiêu Chí KPI":
         st.session_state.df_works[
             [
                 "Mã Việc",
-                "Dự Án",
+                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất",
                 "Người Thực Hiện",
                 "Tiêu Chí KPI Chuẩn",
                 "Trạng Thái",
@@ -396,7 +397,7 @@ elif menu == "⭐ Chấm Điểm & Thưởng/Phạt KPI":
         st.session_state.df_works[
             [
                 "Mã Việc",
-                "Dự Án",
+                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất",
                 "Người Thực Hiện",
                 "Tiêu Chí KPI Chuẩn",
                 "Điểm / Thưởng Phạt",
@@ -446,7 +447,9 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
         c_g1, c_g2 = st.columns(2)
         with c_g1:
             ma_v_moi = st.text_input("Mã Việc (VD: V05)")
-            du_an_moi = st.text_input("Tên Dự Án Nội Thất")
+            ten_cong_trinh_moi = st.text_input(
+                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"
+            )
             nguoi_nhan = st.selectbox(
                 "Chọn nhân sự / đội thi công phụ trách",
                 DANH_SACH_NHAN_SU_CHINH_THUC,
@@ -463,11 +466,13 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
 
         submit_giao = st.form_submit_button("Xác Nhận Giao Việc & Tạo KPI")
         if submit_giao:
-            if ma_v_moi and du_an_moi:
+            if ma_v_moi and ten_cong_trinh_moi:
                 new_row = pd.DataFrame(
                     {
                         "Mã Việc": [ma_v_moi],
-                        "Dự Án": [du_an_moi],
+                        "Tên Công trình/Sản phẩm/Hạng mục Nội Thất": [
+                            ten_cong_trinh_moi
+                        ],
                         "Nội Dung Công Việc": [noi_dung_cv],
                         "Người Thực Hiện": [nguoi_nhan],
                         "Hạn Hoàn Thành": [str(han_chot)],
@@ -482,7 +487,7 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                             if muc_thuong_phat
                             else "Đang đánh giá"
                         ],
-                        "Nguyên Nhân Không Hoàn Thành": ["Chược có"],
+                        "Nguyên Nhân Không Hoàn Thành": ["Chưa có"],
                     }
                 )
                 st.session_state.df_works = pd.concat(
@@ -493,5 +498,6 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                 )
             else:
                 st.warning(
-                    "Vui lòng điền đầy đủ Mã việc và Tên dự án nội thất."
+                    "Vui lòng điền đầy đủ Mã việc và Tên công trình/hạng mục"
+                    " nội thất."
                 )
