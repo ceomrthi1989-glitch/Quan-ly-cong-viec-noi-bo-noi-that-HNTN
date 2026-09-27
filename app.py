@@ -305,7 +305,6 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
 
     df_cc_hien_tai = st.session_state[cham_cong_key]
 
-    # Ép kiểu toàn bộ cột ngày thành SelectboxColumn để click mở dropdown chọn trực tiếp
     column_config = {
         "Nhân sự / Đội ngũ": st.column_config.TextColumn(
             "Nhân sự / Đội ngũ", disabled=True
@@ -373,9 +372,9 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
         tong_ket_data.append(
             {
                 "Nhân sự / Đội ngũ": nv_name,
-                "Tổng Ngày Công Thực Tế": cong_thuc_te,
-                "Vắng Không Phép (v)": dem_v_khong_phep,
-                "Vắng Có Phép (P)": dem_p_co_phep,
+                "Tổng Ngày Công Thực Tế": float(cong_thuc_te),
+                "Vắng Không Phép (v)": int(dem_v_khong_phep),
+                "Vắng Có Phép (P)": int(dem_p_co_phep),
                 "Tình Trạng & Cảnh Báo": trang_thai,
             }
         )
@@ -389,8 +388,14 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
             return ["background-color: #f8d7da"] * len(row)
         return [""] * len(row)
 
+    # Hiển thị bảng tổng kết với định dạng số thập phân gọn gàng (như 29.5)
     st.dataframe(
         df_tong_ket.style.apply(highlight_rows, axis=1),
+        column_config={
+            "Tổng Ngày Công Thực Tế": st.column_config.NumberColumn(
+                "Tổng Ngày Công Thực Tế", format="%.1f 🗓️"
+            )
+        },
         use_container_width=True,
     )
 
