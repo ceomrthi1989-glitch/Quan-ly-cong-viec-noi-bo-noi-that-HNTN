@@ -9,35 +9,75 @@ st.set_page_config(
     layout="wide",
 )
 
-# Tiêu đề ứng dụng
-st.title("🏆 HongNhungTN - Hệ Thống Quản Lý Công Việc & KPI Nội Bộ")
-st.markdown(
-    "Theo dõi tiến độ, báo cáo hiện trường, quản lý tiêu chí KPI và chấm điểm thưởng/phạt tự động."
-)
-
-# Danh sách nhân sự chi tiết theo cơ cấu tổ chức công ty
-DANH_SACH_NHAN_SU = [
-    "Trương Văn Thi (Giám Đốc - Mr. Thi)",
+# 1. Danh sách tài khoản đăng nhập nội bộ
+TAI_KHOAN_NHAN_SU = {
+    "Trương Văn Thi (Giám Đốc - Mr. Thi)": "Trương Văn Thi (Giám Đốc - Mr. Thi)",
     (
         "Đặng Thị Hồng Nhung (P.Giám Đốc kiêm Trưởng Phòng Kinh Doanh -"
         " Mrs. Nhung)"
+    ): (
+        "Đặng Thị Hồng Nhung (P.Giám Đốc kiêm Trưởng Phòng Kinh Doanh -"
+        " Mrs. Nhung)"
     ),
-    "Hồ Ngọc Tú (Kế Toán)",
-    "Lê Hoàn (Lái xe điều phối)",
-    "Hồ Thậm Hải (Thiết kế ra file CNC)",
-    "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
-    "Trương Thất Lập (Nhân viên kỹ thuật)",
-    "Nông Trọng Huấn (Nhân viên kỹ thuật)",
-    "Lê Thanh Hiền (Nhân viên kỹ thuật)",
-    "Lê Gia Huy (Nhân viên kỹ thuật)",
-    "Khúc Gia Bảo (Nhân viên kỹ thuật)",
-    # Các đội thi công chuyên trách & tăng cường
-    "Đội trần tường 1 (Lập + Huy)",
-    "Đội trần tường 2 (Huấn + Bảo)",
-    "Đội lắp đặt 1 (Hiền + Bảo)",
-    "Đội lắp đặt 2 (Hải + Mẫn)",
-    "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
-]
+    "Hồ Ngọc Tú (Kế Toán)": "Hồ Ngọc Tú (Kế Toán)",
+    "Lê Hoàn (Lái xe điều phối)": "Lê Hoàn (Lái xe điều phối)",
+    "Hồ Thậm Hải (Thiết kế CNC)": "Hồ Thậm Hải (Thiết kế ra file CNC)",
+    "Đào Minh Mẫn (Đứng máy CNC)": "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
+    "Trương Thất Lập (Kỹ thuật)": "Trương Thất Lập (Nhân viên kỹ thuật)",
+    "Nông Trọng Huấn (Kỹ thuật)": "Nông Trọng Huấn (Nhân viên kỹ thuật)",
+    "Lê Thanh Hiền (Kỹ thuật)": "Lê Thanh Hiền (Nhân viên kỹ thuật)",
+    "Lê Gia Huy (Kỹ thuật)": "Lê Gia Huy (Nhân viên kỹ thuật)",
+    "Khúc Gia Bảo (Kỹ thuật)": "Khúc Gia Bảo (Nhân viên kỹ thuật)",
+    "Đội trần tường 1 (Lập + Huy)": "Đội trần tường 1 (Lập + Huy)",
+    "Đội trần tường 2 (Huấn + Bảo)": "Đội trần tường 2 (Huấn + Bảo)",
+    "Đội lắp đặt 1 (Hiền + Bảo)": "Đội lắp đặt 1 (Hiền + Bảo)",
+    "Đội lắp đặt 2 (Hải + Mẫn)": "Đội lắp đặt 2 (Hải + Mẫn)",
+    "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)": (
+        "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)"
+    ),
+}
+
+DANH_SACH_NHAN_SU = list(TAI_KHOAN_NHAN_SU.values())
+
+# Quản lý trạng thái đăng nhập trong session_state
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.current_user = None
+
+# --- MÀN HÌNH ĐĂNG NHẬP ---
+if not st.session_state.logged_in:
+    st.title("🔐 Đăng Nhập Hệ Thống - HongNhungTN")
+    st.markdown("Vui lòng chọn tài khoản của bạn để truy cập vào hệ thống.")
+
+    with st.form("login_form"):
+        selected_account = st.selectbox(
+            "Chọn Tên Nhân Sự / Đội Thi Công", list(TAI_KHOAN_NHAN_SU.keys())
+        )
+        submit_login = st.form_submit_button("Xác Nhận Đăng Nhập")
+
+        if submit_login:
+            st.session_state.logged_in = True
+            st.session_state.current_user = TAI_KHOAN_NHAN_SU[selected_account]
+            st.success(
+                f"Đăng nhập thành công với tài khoản: {st.session_state.current_user}"
+            )
+            st.rerun()
+
+    st.stop()
+
+# --- SAU KHI ĐĂNG NHẬP THÀNH CÔNG ---
+st.sidebar.success(f"👤 Xin chào: **{st.session_state.current_user}**")
+if st.sidebar.button("Đăng Xuất"):
+    st.session_state.logged_in = False
+    st.session_state.current_user = None
+    st.rerun()
+
+# Tiêu đề ứng dụng
+st.title("🏆 HongNhungTN - Hệ Thống Quản Lý Công Việc & KPI Nội Bộ")
+st.markdown(
+    "Theo dõi tiến độ, báo cáo hiện trường, trao đổi công việc, quản lý tiêu"
+    " chí KPI và chấm điểm thưởng/phạt."
+)
 
 # Khởi tạo dữ liệu mẫu cho công việc
 if "df_works" not in st.session_state:
@@ -95,7 +135,7 @@ if "df_works" not in st.session_state:
         }
     )
 
-# Khởi tạo kho lưu trữ tin nhắn / báo cáo hiện trường (chat & media)
+# Khởi tạo kho lưu trữ báo cáo hiện trường (Chat & Media)
 if "chat_reports" not in st.session_state:
     st.session_state.chat_reports = [
         {
@@ -109,21 +149,38 @@ if "chat_reports" not in st.session_state:
         }
     ]
 
-# Menu chức năng chính
+# Khởi tạo kho lưu trữ tin nhắn trao đổi công việc riêng (Group Chat nội bộ)
+if "internal_messages" not in st.session_state:
+    st.session_state.internal_messages = [
+        {
+            "thoi_gian": "2026-04-04 09:00",
+            "nguoi_gui": "Trương Văn Thi (Giám Đốc - Mr. Thi)",
+            "noi_dung": (
+                "Chào anh em, chú ý tiến độ công trình Biệt thự phố tuần này"
+                " nhé!"
+            ),
+        }
+    ]
+
+# Menu điều hướng chung cho tất cả nhân sự (mọi người đều thấy đầy đủ các tính năng)
 st.sidebar.title("🛠️ Điều Hướng Quản Lý")
 menu = st.sidebar.radio(
     "Chọn Chức Năng:",
     [
-        "📊 Theo Dõi Tiến Độ Công Việc",
-        "💬 Báo Cáo Hiện Trường (Chat & Media)",
-        "📋 Quản Lý Tiêu Chí KPI Chuẩn",
+        "📊 Theo Dõi & Xác Nhận Công Việc",
+        "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)",
+        "💭 Phòng Chat Trao Đổi Công Việc Riêng",
+        "📋 Quản Lý & Xem Tiêu Chí KPI",
         "⭐ Chấm Điểm & Thưởng/Phạt KPI",
         "➕ Giao Việc Mới & Thiết Lập KPI",
     ],
 )
 
-if menu == "📊 Theo Dõi Tiến Độ Công Việc":
-    st.subheader("📊 Bảng Theo Dõi Tiến Độ & Nguyên Nhân Không Hoàn Thành")
+# --- 1. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
+if menu == "📊 Theo Dõi & Xác Nhận Công Việc":
+    st.subheader(
+        "📊 Bảng Theo Dõi Tiến Độ, Xác Nhận & Cập Nhật Công Việc Toàn Công Ty"
+    )
 
     col_f1, col_f2 = st.columns(2)
     with col_f1:
@@ -154,15 +211,15 @@ if menu == "📊 Theo Dõi Tiến Độ Công Việc":
 
     st.dataframe(df_hien_thi, use_container_width=True)
 
-    st.markdown("### 🔄 Cập Nhật Trạng Thái & Nguyên Nhân Không Hoàn Thành")
-    with st.form("form_update_nhan_vien"):
+    st.markdown("### 🔄 Xác Nhận, Cập Nhật Trạng Thái & Nguyên Nhân Công Việc")
+    with st.form("form_update_cong_viec"):
         c_up1, c_up2 = st.columns(2)
         with c_up1:
             ma_viec_chon = st.selectbox(
                 "Chọn Mã Việc cần cập nhật", st.session_state.df_works["Mã Việc"]
             )
             trang_thai_moi = st.selectbox(
-                "Trạng thái mới",
+                "Cập nhật Trạng Thái mới",
                 [
                     "Đang thực hiện",
                     "Hoàn thành",
@@ -172,10 +229,11 @@ if menu == "📊 Theo Dõi Tiến Độ Công Việc":
             )
         with c_up2:
             nguyen_nhan_moi = st.text_area(
-                "Nhập nguyên nhân không hoàn thành / Khó khăn phát sinh (nếu có):"
+                "Điền nguyên nhân không hoàn thành / Khó khăn phát sinh (nếu"
+                " trễ hạn hoặc sự cố):"
             )
 
-        sub_update_nv = st.form_submit_button("Cập Nhật Báo Cáo")
+        sub_update_nv = st.form_submit_button("Xác Nhận & Cập Nhật Công Việc")
         if sub_update_nv:
             idx = st.session_state.df_works[
                 st.session_state.df_works["Mã Việc"] == ma_viec_chon
@@ -189,19 +247,23 @@ if menu == "📊 Theo Dõi Tiến Độ Công Việc":
                         idx, "Nguyên Nhân Không Hoàn Thành"
                     ] = nguyen_nhan_moi
                 st.success(
-                    f"Đã cập nhật thành công cho công việc: {ma_viec_chon}"
+                    f"Đã cập nhật thành công trạng thái cho mã việc:"
+                    f" {ma_viec_chon}"
                 )
 
-elif menu == "💬 Báo Cáo Hiện Trường (Chat & Media)":
+# --- 2. BÁO CÁO HIỆN TRƯỜNG ---
+elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
     st.subheader(
-        "💬 Kênh Báo Cáo Công Việc, Gửi Hình Ảnh & Video Công Trình / Xưởng"
+        "💬 Kênh Báo Cáo Công Việc Hàng Ngày, Gửi Hình Ảnh & Video Công Trình"
     )
 
     with st.form("form_bao_cao_ngay", clear_on_submit=True):
         c1, c2 = st.columns(2)
         with c1:
-            ten_nv = st.selectbox(
-                "Chọn nhân sự / đội thi công báo cáo", DANH_SACH_NHAN_SU
+            ten_nv = st.text_input(
+                "Nhân sự / Đội báo cáo",
+                value=st.session_state.current_user,
+                disabled=True,
             )
             ten_du_an = st.text_input(
                 "Tên Dự Án hoặc Hạng Mục (VD: Tủ bếp nhà anh Nam)"
@@ -216,14 +278,14 @@ elif menu == "💬 Báo Cáo Hiện Trường (Chat & Media)":
                 ],
             )
 
-        noi_dung_bc = st.text_area("Nội dung báo cáo chi tiết")
+        noi_dung_bc = st.text_area("Nội dung báo cáo chi tiết trong ngày")
         uploaded_media = st.file_uploader(
-            "Đính kèm Hình ảnh / Video hiện trường",
+            "Đính kèm Hình ảnh / Video thực tế",
             type=["png", "jpg", "jpeg", "mp4", "mov"],
             accept_multiple_files=True,
         )
 
-        sub_bc = st.form_submit_button("Gửi Báo Cáo")
+        sub_bc = st.form_submit_button("Gửi Báo Cáo Hiện Trường")
         if sub_bc:
             if noi_dung_bc:
                 thoi_gian_hien_tai = (
@@ -233,14 +295,14 @@ elif menu == "💬 Báo Cáo Hiện Trường (Chat & Media)":
                     0,
                     {
                         "thoi_gian": thoi_gian_hien_tai,
-                        "nguoi_gui": ten_nv,
+                        "nguoi_gui": st.session_state.current_user,
                         "du_an": ten_du_an,
                         "noi_dung": noi_dung_bc,
                         "loai": loai_bc,
                         "media": uploaded_media,
                     },
                 )
-                st.success("Đã gửi báo cáo thành công!")
+                st.success("Đã gửi báo cáo hiện trường thành công!")
             else:
                 st.warning("Vui lòng điền nội dung báo cáo.")
 
@@ -249,7 +311,9 @@ elif menu == "💬 Báo Cáo Hiện Trường (Chat & Media)":
     for report in st.session_state.chat_reports:
         with st.container():
             st.info(
-                f"👤 **{report['nguoi_gui']}** | 📁 **Dự án:** {report.get('du_an', 'Chung')} | ⏰ *{report['thoi_gian']}* | 🏷️ *[{report['loai']}]*"
+                f"👤 **{report['nguoi_gui']}** | 📁 **Dự án:**"
+                f" {report.get('du_an', 'Chung')} | ⏰ *{report['thoi_gian']}*"
+                f" | 🏷️ *[{report['loai']}]*"
             )
             st.write(f"💬 **Nội dung:** {report['noi_dung']}")
             if "media" in report and report["media"]:
@@ -266,12 +330,48 @@ elif menu == "💬 Báo Cáo Hiện Trường (Chat & Media)":
                             st.video(file)
             st.markdown("---")
 
-elif menu == "📋 Quản Lý Tiêu Chí KPI Chuẩn":
-    st.subheader("📋 Danh Mục & Thiết Lập Tiêu Chí KPI Chuẩn Của Công Ty")
+# --- 3. PHÒNG CHAT TRAO ĐỔI CÔNG VIỆC RIÊNG ---
+elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
+    st.subheader("💭 Kênh Nhắn Tin & Trao Đổi Công Việc Nội Bộ (Group Chat)")
     st.markdown(
-        "Quản lý và cập nhật các yêu cầu tiêu chuẩn chất lượng kỹ thuật cho từng công việc/hạng mục."
+        "Kênh chat nhanh giữa các thành viên, thợ xưởng, đội lắp đặt và ban"
+        " giám đốc để trao đổi thông tin công việc."
     )
 
+    # Form gửi tin nhắn chat mới
+    with st.form("form_chat_noi_bo", clear_on_submit=True):
+        noi_dung_chat = st.text_input(
+            "Nhập nội dung trao đổi công việc..."
+        )
+        sub_chat = st.form_submit_button("Gửi Tin Nhắn")
+        if sub_chat:
+            if noi_dung_chat:
+                thoi_gian_chat = datetime.datetime.now().strftime(
+                    "%Y-%m-%d %H:%M"
+                )
+                st.session_state.internal_messages.append(
+                    {
+                        "thoi_gian": thoi_gian_chat,
+                        "nguoi_gui": st.session_state.current_user,
+                        "noi_dung": noi_dung_chat,
+                    }
+                )
+                st.rerun()
+            else:
+                st.warning("Vui lòng nhập nội dung tin nhắn.")
+
+    st.markdown("---")
+    st.markdown("### 💬 Lịch Sử Trao Đổi Tin Nhắn")
+    # Hiển thị tin nhắn từ mới nhất xuống dưới hoặc cũ lên trên
+    for msg in reversed(st.session_state.internal_messages):
+        st.markdown(
+            f"**👤 {msg['nguoi_gui']}**  *({msg['thoi_gian']})*:\n> {msg['noi_dung']}"
+        )
+        st.markdown("---")
+
+# --- 4. QUẢN LÝ TIÊU CHÍ KPI ---
+elif menu == "📋 Quản Lý & Xem Tiêu Chí KPI":
+    st.subheader("📋 Danh Mục & Thiết Lập Tiêu Chí KPI Chuẩn Của Công Ty")
     st.dataframe(
         st.session_state.df_works[
             [
@@ -311,11 +411,11 @@ elif menu == "📋 Quản Lý Tiêu Chí KPI Chuẩn":
                     f"Đã cập nhật tiêu chí KPI thành công cho mã việc: {ma_v_tc}"
                 )
 
+# --- 5. CHẤM ĐIỂM & THƯỞNG PHẠT KPI ---
 elif menu == "⭐ Chấm Điểm & Thưởng/Phạt KPI":
     st.subheader(
         "⭐ Quản Lý Chấm Điểm KPI, Mức Thưởng & Phạt Cho Từng Nhân Sự"
     )
-
     st.dataframe(
         st.session_state.df_works[
             [
@@ -363,9 +463,9 @@ elif menu == "⭐ Chấm Điểm & Thưởng/Phạt KPI":
                     f"Đã lưu kết quả chấm điểm KPI cho mã việc: {ma_v_kpi}"
                 )
 
+# --- 6. GIAO VIỆC MỚI & THIẾT LẬP KPI ---
 elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
     st.subheader("➕ Giao Việc Mới Kèm Bộ Tiêu Chí KPI Chuẩn")
-
     with st.form("form_giao_viec_kpi"):
         c_g1, c_g2 = st.columns(2)
         with c_g1:
