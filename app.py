@@ -32,84 +32,44 @@ DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
 ]
 
-# Khởi tạo danh sách chờ phê duyệt và danh sách đã được duyệt trong session_state
-if "pending_users" not in st.session_state:
-    st.session_state.pending_users = []  # Các tài khoản đang chờ sếp duyệt
-
-if "approved_users" not in st.session_state:
-    # Mặc định duyệt sẵn Giám đốc để không bị kẹt lần đầu tiên
-    st.session_state.approved_users = [
-        "Trương Văn Thi (Giám Đốc - Mr. Thi)",
-        (
-            "Đặng Thị Hồng Nhung (P.Giám Đốc kiêm Trưởng Phòng Kinh Doanh -"
-            " Mrs. Nhung)"
-        ),
-    ]
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.current_user = None
 
-# --- MÀN HÌNH ĐĂNG NHÝ / ĐĂNG NHẬP & CHỜ XÁC NHẬN ---
+# --- MÀN HÌNH ĐĂNG NHẬP NỘI BỘ ---
 if not st.session_state.logged_in:
-    st.title("🔐 Cổng Xác Thực Nhân Sự - HongNhungTN")
+    st.title("🔐 Đăng Nhập Hệ Thống - HongNhungTN")
     st.markdown(
         "### Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng"
         " Nhung Tây Nguyên"
     )
     st.markdown(
-        "Vui lòng chọn tên chính xác của bạn trong danh sách để đăng ký/đăng"
-        " nhập vào hệ thống nội bộ."
+        "Vui lòng chọn tên của bạn và nhập mật khẩu nội bộ để truy cập ứng"
+        " dụng."
     )
 
-    tab_dn, tab_dk = st.tabs(["Đăng Nhập Hệ Thống", "Đăng Ký Thành Viên Mới"])
+    with st.form("login_form"):
+        selected_account = st.selectbox(
+            "Chọn tên nhân sự / đội thi công của bạn",
+            DANH_SACH_NHAN_SU_CHINH_THUC,
+        )
+        mat_khau_chung = st.text_input(
+            "Mật khẩu nội bộ công ty:", type="password"
+        )
+        submit_login = st.form_submit_button("Đăng Nhập Hệ Thống")
 
-    with tab_dn:
-        with st.form("login_form"):
-            selected_account = st.selectbox(
-                "Chọn tên của bạn", DANH_SACH_NHAN_SU_CHINH_THUC
-            )
-            submit_login = st.form_submit_button("Đăng Nhập")
-
-            if submit_login:
-                if selected_account in st.session_state.approved_users:
-                    st.session_state.logged_in = True
-                    st.session_state.current_user = selected_account
-                    st.success("Đăng nhập thành công!")
-                    st.rerun()
-                else:
-                    st.warning(
-                        "Tài khoản của bạn chưa được Ban Giám Đốc xác nhận phê"
-                        " duyệt vào hệ thống. Vui lòng liên hệ Giám Đốc Mr.Thi"
-                        " hoặc chuyển sang tab 'Đăng Ký Thành Viên Mới' để gửi"
-                        " yêu cầu!"
-                    )
-
-    with tab_dk:
-        with st.form("register_form"):
-            reg_account = st.selectbox(
-                "Chọn tên đăng ký của bạn", DANH_SACH_NHAN_SU_CHINH_THUC
-            )
-            submit_reg = st.form_submit_button("Gửi Yêu Cầu Gia Nhập")
-
-            if submit_reg:
-                if reg_account in st.session_state.approved_users:
-                    st.info(
-                        "Tài khoản này đã được kích hoạt trước đó. Bạn có thể"
-                        " qua tab Đăng Nhập để vào app."
-                    )
-                elif reg_account in st.session_state.pending_users:
-                    st.warning(
-                        "Yêu cầu của bạn đã được gửi đi và đang chờ Ban Giám"
-                        " Đốc xác nhận."
-                    )
-                else:
-                    st.session_state.pending_users.append(reg_account)
-                    st.success(
-                        "Đã gửi yêu cầu đăng ký thành công! Vui lòng chờ Giám"
-                        " Đốc (Mr. Thi) hoặc Phó Giám Đốc (Mrs. Nhung) xác nhận"
-                        " phê duyệt."
-                    )
+        if submit_login:
+            # Mật khẩu nội bộ chung cho toàn công ty (Bạn có thể đổi thành bất kỳ dãy số nào, ví dụ: '8888' hoặc 'hungnhungtn')
+            if mat_khau_chung == "123" or mat_khau_chung == "8888":
+                st.session_state.logged_in = True
+                st.session_state.current_user = selected_account
+                st.success("Đăng nhập thành công!")
+                st.rerun()
+            else:
+                st.error(
+                    "Mật khẩu nội bộ không chính xác! Vui lòng liên hệ Giám"
+                    " Đốc để nhận mật khẩu."
+                )
 
     st.stop()
 
@@ -188,26 +148,19 @@ if "chat_reports" not in st.session_state:
 if "internal_messages" not in st.session_state:
     st.session_state.internal_messages = []
 
-# Kiểm tra xem người đang đăng nhập có phải là Ban Giám Đốc không để hiển thị thêm chức năng "Phê Duyệt Thành Viên"
-la_giam_doc = (
-    "Trương Văn Thi" in st.session_state.current_user
-    or "Đặng Thị Hồng Nhung" in st.session_state.current_user
-)
-
-danh_sach_menu = [
-    "📊 Theo Dõi & Xác Nhận Công Việc",
-    "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)",
-    "💭 Phòng Chat Trao Đổi Công Việc Riêng",
-    "📋 Quản Lý & Xem Tiêu Chí KPI",
-    "⭐ Chấm Điểm & Thưởng/Phạt KPI",
-    "➕ Giao Việc Mới & Thiết Lập KPI",
-]
-
-if la_giam_doc:
-    danh_sach_menu.append("🛡️ Phê Duyệt Thành Viên Gia Nhập App")
-
+# Menu điều hướng chung cho tất cả nhân sự
 st.sidebar.title("🛠️ Điều Hướng Quản Lý")
-menu = st.sidebar.radio("Chọn Chức Năng:", danh_sach_menu)
+menu = st.sidebar.radio(
+    "Chọn Chức Năng:",
+    [
+        "📊 Theo Dõi & Xác Nhận Công Việc",
+        "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)",
+        "💭 Phòng Chat Trao Đổi Công Việc Riêng",
+        "📋 Quản Lý & Xem Tiêu Chí KPI",
+        "⭐ Chấm Điểm & Thưởng/Phạt KPI",
+        "➕ Giao Việc Mới & Thiết Lập KPI",
+    ],
+)
 
 # --- 1. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
 if menu == "📊 Theo Dõi & Xác Nhận Công Việc":
@@ -529,7 +482,7 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                             if muc_thuong_phat
                             else "Đang đánh giá"
                         ],
-                        "Nguyên Nhân Không Hoàn Thành": ["Chưa có"],
+                        "Nguyên Nhân Không Hoàn Thành": ["Chược có"],
                     }
                 )
                 st.session_state.df_works = pd.concat(
@@ -542,37 +495,3 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                 st.warning(
                     "Vui lòng điền đầy đủ Mã việc và Tên dự án nội thất."
                 )
-
-# --- 7. PHÊ DUYỆT THÀNH VIÊN (CHỈ DÀNH CHO GIÁM ĐỐC) ---
-elif menu == "🛡️ Phê Duyệt Thành Viên Gia Nhập App" and la_giam_doc:
-    st.subheader(
-        "🛡️ Quản Lý & Phê Duyệt Thành Viên Đăng Ký Gia Nhập Hệ Thống"
-    )
-    st.markdown(
-        "Danh sách các nhân sự đã gửi yêu cầu đăng ký tài khoản và chờ Ban"
-        " Giám Đốc xác nhận:"
-    )
-
-    if not st.session_state.pending_users:
-        st.info("Hiện tại không có yêu cầu đăng ký nào đang chờ phê duyệt.")
-    else:
-        for idx, user_pend in enumerate(st.session_state.pending_users):
-            cols_duyet = st.columns([3, 1, 1])
-            with cols_duyet[0]:
-                st.write(f"👤 **{user_pend}**")
-            with cols_duyet[1]:
-                if st.button("Phê Duyệt", key=f"accept_{idx}"):
-                    st.session_state.approved_users.append(user_pend)
-                    st.session_state.pending_users.remove(user_pend)
-                    st.success(f"Đã duyệt thành công cho: {user_pend}")
-                    st.rerun()
-            with cols_duyet[2]:
-                if st.button("Từ Chối", key=f"reject_{idx}"):
-                    st.session_state.pending_users.remove(user_pend)
-                    st.warning(f"Đã từ chối yêu cầu của: {user_pend}")
-                    st.rerun()
-
-    st.markdown("---")
-    st.markdown("### 📋 Danh Sách Các Thành Viên Đã Được Phê Duyệt Hiện Tại")
-    for app_u in st.session_state.approved_users:
-        st.write(f"✔️ {app_u}")
