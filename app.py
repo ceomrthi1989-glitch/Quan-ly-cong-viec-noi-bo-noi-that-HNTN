@@ -9,59 +9,107 @@ st.set_page_config(
     layout="wide",
 )
 
-# 1. Danh sách tài khoản đăng nhập nội bộ
-TAI_KHOAN_NHAN_SU = {
-    "Trương Văn Thi (Giám Đốc - Mr. Thi)": "Trương Văn Thi (Giám Đốc - Mr. Thi)",
+# 1. Danh sách nhân sự chính thức của công ty
+DANH_SACH_NHAN_SU_CHINH_THUC = [
+    "Trương Văn Thi (Giám Đốc - Mr. Thi)",
     (
         "Đặng Thị Hồng Nhung (P.Giám Đốc kiêm Trưởng Phòng Kinh Doanh -"
         " Mrs. Nhung)"
-    ): (
-        "Đặng Thị Hồng Nhung (P.Giám Đốc kiêm Trưởng Phòng Kinh Doanh -"
-        " Mrs. Nhung)"
     ),
-    "Hồ Ngọc Tú (Kế Toán)": "Hồ Ngọc Tú (Kế Toán)",
-    "Lê Hoàn (Lái xe điều phối)": "Lê Hoàn (Lái xe điều phối)",
-    "Hồ Thậm Hải (Thiết kế CNC)": "Hồ Thậm Hải (Thiết kế ra file CNC)",
-    "Đào Minh Mẫn (Đứng máy CNC)": "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
-    "Trương Thất Lập (Kỹ thuật)": "Trương Thất Lập (Nhân viên kỹ thuật)",
-    "Nông Trọng Huấn (Kỹ thuật)": "Nông Trọng Huấn (Nhân viên kỹ thuật)",
-    "Lê Thanh Hiền (Kỹ thuật)": "Lê Thanh Hiền (Nhân viên kỹ thuật)",
-    "Lê Gia Huy (Kỹ thuật)": "Lê Gia Huy (Nhân viên kỹ thuật)",
-    "Khúc Gia Bảo (Kỹ thuật)": "Khúc Gia Bảo (Nhân viên kỹ thuật)",
-    "Đội trần tường 1 (Lập + Huy)": "Đội trần tường 1 (Lập + Huy)",
-    "Đội trần tường 2 (Huấn + Bảo)": "Đội trần tường 2 (Huấn + Bảo)",
-    "Đội lắp đặt 1 (Hiền + Bảo)": "Đội lắp đặt 1 (Hiền + Bảo)",
-    "Đội lắp đặt 2 (Hải + Mẫn)": "Đội lắp đặt 2 (Hải + Mẫn)",
-    "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)": (
-        "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)"
-    ),
-}
+    "Hồ Ngọc Tú (Kế Toán)",
+    "Lê Hoàn (Lái xe điều phối)",
+    "Hồ Thậm Hải (Thiết kế ra file CNC)",
+    "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
+    "Trương Thất Lập (Nhân viên kỹ thuật)",
+    "Nông Trọng Huấn (Nhân viên kỹ thuật)",
+    "Lê Thanh Hiền (Nhân viên kỹ thuật)",
+    "Lê Gia Huy (Nhân viên kỹ thuật)",
+    "Khúc Gia Bảo (Nhân viên kỹ thuật)",
+    "Đội trần tường 1 (Lập + Huy)",
+    "Đội trần tường 2 (Huấn + Bảo)",
+    "Đội lắp đặt 1 (Hiền + Bảo)",
+    "Đội lắp đặt 2 (Hải + Mẫn)",
+    "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
+]
 
-DANH_SACH_NHAN_SU = list(TAI_KHOAN_NHAN_SU.values())
+# Khởi tạo danh sách chờ phê duyệt và danh sách đã được duyệt trong session_state
+if "pending_users" not in st.session_state:
+    st.session_state.pending_users = []  # Các tài khoản đang chờ sếp duyệt
 
-# Quản lý trạng thái đăng nhập trong session_state
+if "approved_users" not in st.session_state:
+    # Mặc định duyệt sẵn Giám đốc để không bị kẹt lần đầu tiên
+    st.session_state.approved_users = [
+        "Trương Văn Thi (Giám Đốc - Mr. Thi)",
+        (
+            "Đặng Thị Hồng Nhung (P.Giám Đốc kiêm Trưởng Phòng Kinh Doanh -"
+            " Mrs. Nhung)"
+        ),
+    ]
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.current_user = None
 
-# --- MÀN HÌNH ĐĂNG NHẬP ---
+# --- MÀN HÌNH ĐĂNG NHÝ / ĐĂNG NHẬP & CHỜ XÁC NHẬN ---
 if not st.session_state.logged_in:
-    st.title("🔐 Đăng Nhập Hệ Thống - HongNhungTN")
-    st.markdown("Vui lòng chọn tài khoản của bạn để truy cập vào hệ thống.")
+    st.title("🔐 Cổng Xác Thực Nhân Sự - HongNhungTN")
+    st.markdown(
+        "### Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng"
+        " Nhung Tây Nguyên"
+    )
+    st.markdown(
+        "Vui lòng chọn tên chính xác của bạn trong danh sách để đăng ký/đăng"
+        " nhập vào hệ thống nội bộ."
+    )
 
-    with st.form("login_form"):
-        selected_account = st.selectbox(
-            "Chọn Tên Nhân Sự / Đội Thi Công", list(TAI_KHOAN_NHAN_SU.keys())
-        )
-        submit_login = st.form_submit_button("Xác Nhận Đăng Nhập")
+    tab_dn, tab_dk = st.tabs(["Đăng Nhập Hệ Thống", "Đăng Ký Thành Viên Mới"])
 
-        if submit_login:
-            st.session_state.logged_in = True
-            st.session_state.current_user = TAI_KHOAN_NHAN_SU[selected_account]
-            st.success(
-                f"Đăng nhập thành công với tài khoản: {st.session_state.current_user}"
+    with tab_dn:
+        with st.form("login_form"):
+            selected_account = st.selectbox(
+                "Chọn tên của bạn", DANH_SACH_NHAN_SU_CHINH_THUC
             )
-            st.rerun()
+            submit_login = st.form_submit_button("Đăng Nhập")
+
+            if submit_login:
+                if selected_account in st.session_state.approved_users:
+                    st.session_state.logged_in = True
+                    st.session_state.current_user = selected_account
+                    st.success("Đăng nhập thành công!")
+                    st.rerun()
+                else:
+                    st.warning(
+                        "Tài khoản của bạn chưa được Ban Giám Đốc xác nhận phê"
+                        " duyệt vào hệ thống. Vui lòng liên hệ Giám Đốc Mr.Thi"
+                        " hoặc chuyển sang tab 'Đăng Ký Thành Viên Mới' để gửi"
+                        " yêu cầu!"
+                    )
+
+    with tab_dk:
+        with st.form("register_form"):
+            reg_account = st.selectbox(
+                "Chọn tên đăng ký của bạn", DANH_SACH_NHAN_SU_CHINH_THUC
+            )
+            submit_reg = st.form_submit_button("Gửi Yêu Cầu Gia Nhập")
+
+            if submit_reg:
+                if reg_account in st.session_state.approved_users:
+                    st.info(
+                        "Tài khoản này đã được kích hoạt trước đó. Bạn có thể"
+                        " qua tab Đăng Nhập để vào app."
+                    )
+                elif reg_account in st.session_state.pending_users:
+                    st.warning(
+                        "Yêu cầu của bạn đã được gửi đi và đang chờ Ban Giám"
+                        " Đốc xác nhận."
+                    )
+                else:
+                    st.session_state.pending_users.append(reg_account)
+                    st.success(
+                        "Đã gửi yêu cầu đăng ký thành công! Vui lòng chờ Giám"
+                        " Đốc (Mr. Thi) hoặc Phó Giám Đốc (Mrs. Nhung) xác nhận"
+                        " phê duyệt."
+                    )
 
     st.stop()
 
@@ -75,8 +123,7 @@ if st.sidebar.button("Đăng Xuất"):
 # Tiêu đề ứng dụng
 st.title("🏆 HongNhungTN - Hệ Thống Quản Lý Công Việc & KPI Nội Bộ")
 st.markdown(
-    "Theo dõi tiến độ, báo cáo hiện trường, trao đổi công việc, quản lý tiêu"
-    " chí KPI và chấm điểm thưởng/phạt."
+    "Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng Nhung Tây Nguyên"
 )
 
 # Khởi tạo dữ liệu mẫu cho công việc
@@ -135,52 +182,36 @@ if "df_works" not in st.session_state:
         }
     )
 
-# Khởi tạo kho lưu trữ báo cáo hiện trường (Chat & Media)
+# Khởi tạo kho lưu trữ báo cáo hiện trường và chat nhóm
 if "chat_reports" not in st.session_state:
-    st.session_state.chat_reports = [
-        {
-            "thoi_gian": "2026-04-04 08:30",
-            "nguoi_gui": "Đội trần tường 1 (Lập + Huy)",
-            "du_an": "Biệt Thự Phố - C.Hạnh",
-            "noi_dung": (
-                "Đã bắt đầu triển khai khung xương trần tường tại công trình."
-            ),
-            "loai": "Báo cáo tiến độ",
-        }
-    ]
-
-# Khởi tạo kho lưu trữ tin nhắn trao đổi công việc riêng (Group Chat nội bộ)
+    st.session_state.chat_reports = []
 if "internal_messages" not in st.session_state:
-    st.session_state.internal_messages = [
-        {
-            "thoi_gian": "2026-04-04 09:00",
-            "nguoi_gui": "Trương Văn Thi (Giám Đốc - Mr. Thi)",
-            "noi_dung": (
-                "Chào anh em, chú ý tiến độ công trình Biệt thự phố tuần này"
-                " nhé!"
-            ),
-        }
-    ]
+    st.session_state.internal_messages = []
 
-# Menu điều hướng chung cho tất cả nhân sự (mọi người đều thấy đầy đủ các tính năng)
-st.sidebar.title("🛠️ Điều Hướng Quản Lý")
-menu = st.sidebar.radio(
-    "Chọn Chức Năng:",
-    [
-        "📊 Theo Dõi & Xác Nhận Công Việc",
-        "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)",
-        "💭 Phòng Chat Trao Đổi Công Việc Riêng",
-        "📋 Quản Lý & Xem Tiêu Chí KPI",
-        "⭐ Chấm Điểm & Thưởng/Phạt KPI",
-        "➕ Giao Việc Mới & Thiết Lập KPI",
-    ],
+# Kiểm tra xem người đang đăng nhập có phải là Ban Giám Đốc không để hiển thị thêm chức năng "Phê Duyệt Thành Viên"
+la_giam_doc = (
+    "Trương Văn Thi" in st.session_state.current_user
+    or "Đặng Thị Hồng Nhung" in st.session_state.current_user
 )
+
+danh_sach_menu = [
+    "📊 Theo Dõi & Xác Nhận Công Việc",
+    "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)",
+    "💭 Phòng Chat Trao Đổi Công Việc Riêng",
+    "📋 Quản Lý & Xem Tiêu Chí KPI",
+    "⭐ Chấm Điểm & Thưởng/Phạt KPI",
+    "➕ Giao Việc Mới & Thiết Lập KPI",
+]
+
+if la_giam_doc:
+    danh_sach_menu.append("🛡️ Phê Duyệt Thành Viên Gia Nhập App")
+
+st.sidebar.title("🛠️ Điều Hướng Quản Lý")
+menu = st.sidebar.radio("Chọn Chức Năng:", danh_sach_menu)
 
 # --- 1. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
 if menu == "📊 Theo Dõi & Xác Nhận Công Việc":
-    st.subheader(
-        "📊 Bảng Theo Dõi Tiến Độ, Xác Nhận & Cập Nhật Công Việc Toàn Công Ty"
-    )
+    st.subheader("📊 Bảng Theo Dõi Tiến Độ & Xác Nhận Công Việc Toàn Công Ty")
 
     col_f1, col_f2 = st.columns(2)
     with col_f1:
@@ -196,7 +227,8 @@ if menu == "📊 Theo Dõi & Xác Nhận Công Việc":
         )
     with col_f2:
         loc_nhan_su = st.selectbox(
-            "Lọc theo nhân sự / đội thi công", ["Tất cả"] + DANH_SACH_NHAN_SU
+            "Lọc theo nhân sự / đội thi công",
+            ["Tất cả"] + DANH_SACH_NHAN_SU_CHINH_THUC,
         )
 
     df_hien_thi = st.session_state.df_works
@@ -229,8 +261,7 @@ if menu == "📊 Theo Dõi & Xác Nhận Công Việc":
             )
         with c_up2:
             nguyen_nhan_moi = st.text_area(
-                "Điền nguyên nhân không hoàn thành / Khó khăn phát sinh (nếu"
-                " trễ hạn hoặc sự cố):"
+                "Điền nguyên nhân không hoàn thành / Khó khăn phát sinh (nếu có):"
             )
 
         sub_update_nv = st.form_submit_button("Xác Nhận & Cập Nhật Công Việc")
@@ -333,16 +364,9 @@ elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
 # --- 3. PHÒNG CHAT TRAO ĐỔI CÔNG VIỆC RIÊNG ---
 elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
     st.subheader("💭 Kênh Nhắn Tin & Trao Đổi Công Việc Nội Bộ (Group Chat)")
-    st.markdown(
-        "Kênh chat nhanh giữa các thành viên, thợ xưởng, đội lắp đặt và ban"
-        " giám đốc để trao đổi thông tin công việc."
-    )
 
-    # Form gửi tin nhắn chat mới
     with st.form("form_chat_noi_bo", clear_on_submit=True):
-        noi_dung_chat = st.text_input(
-            "Nhập nội dung trao đổi công việc..."
-        )
+        noi_dung_chat = st.text_input("Nhập nội dung trao đổi công việc...")
         sub_chat = st.form_submit_button("Gửi Tin Nhắn")
         if sub_chat:
             if noi_dung_chat:
@@ -362,7 +386,6 @@ elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
 
     st.markdown("---")
     st.markdown("### 💬 Lịch Sử Trao Đổi Tin Nhắn")
-    # Hiển thị tin nhắn từ mới nhất xuống dưới hoặc cũ lên trên
     for msg in reversed(st.session_state.internal_messages):
         st.markdown(
             f"**👤 {msg['nguoi_gui']}**  *({msg['thoi_gian']})*:\n> {msg['noi_dung']}"
@@ -472,7 +495,8 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
             ma_v_moi = st.text_input("Mã Việc (VD: V05)")
             du_an_moi = st.text_input("Tên Dự Án Nội Thất")
             nguoi_nhan = st.selectbox(
-                "Chọn nhân sự / đội thi công phụ trách", DANH_SACH_NHAN_SU
+                "Chọn nhân sự / đội thi công phụ trách",
+                DANH_SACH_NHAN_SU_CHINH_THUC,
             )
             noi_dung_cv = st.text_area("Mô tả chi tiết công việc cần làm")
         with c_g2:
@@ -518,3 +542,37 @@ elif menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                 st.warning(
                     "Vui lòng điền đầy đủ Mã việc và Tên dự án nội thất."
                 )
+
+# --- 7. PHÊ DUYỆT THÀNH VIÊN (CHỈ DÀNH CHO GIÁM ĐỐC) ---
+elif menu == "🛡️ Phê Duyệt Thành Viên Gia Nhập App" and la_giam_doc:
+    st.subheader(
+        "🛡️ Quản Lý & Phê Duyệt Thành Viên Đăng Ký Gia Nhập Hệ Thống"
+    )
+    st.markdown(
+        "Danh sách các nhân sự đã gửi yêu cầu đăng ký tài khoản và chờ Ban"
+        " Giám Đốc xác nhận:"
+    )
+
+    if not st.session_state.pending_users:
+        st.info("Hiện tại không có yêu cầu đăng ký nào đang chờ phê duyệt.")
+    else:
+        for idx, user_pend in enumerate(st.session_state.pending_users):
+            cols_duyet = st.columns([3, 1, 1])
+            with cols_duyet[0]:
+                st.write(f"👤 **{user_pend}**")
+            with cols_duyet[1]:
+                if st.button("Phê Duyệt", key=f"accept_{idx}"):
+                    st.session_state.approved_users.append(user_pend)
+                    st.session_state.pending_users.remove(user_pend)
+                    st.success(f"Đã duyệt thành công cho: {user_pend}")
+                    st.rerun()
+            with cols_duyet[2]:
+                if st.button("Từ Chối", key=f"reject_{idx}"):
+                    st.session_state.pending_users.remove(user_pend)
+                    st.warning(f"Đã từ chối yêu cầu của: {user_pend}")
+                    st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 📋 Danh Sách Các Thành Viên Đã Được Phê Duyệt Hiện Tại")
+    for app_u in st.session_state.approved_users:
+        st.write(f"✔️ {app_u}")
