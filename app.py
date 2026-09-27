@@ -282,7 +282,11 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
             "Chọn Năm", range(datetime.date.today().year, 2024, -1)
         )
     with col_cc2:
-        selected_month = st.selectbox("Chọn Tháng", range(1, 13), index=9)  # Mặc định tháng 10
+        selected_month = st.selectbox(
+            "Chọn Tháng",
+            range(1, 13),
+            index=datetime.date.today().month - 1,
+        )
 
     # Lấy số ngày trong tháng được chọn
     num_days = calendar.monthrange(selected_year, selected_month)[1]
@@ -301,7 +305,7 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
 
     df_cc_hien_tai = st.session_state[cham_cong_key]
 
-    # Cấu hình cột cho phép chọn lựa ký hiệu trực tiếp trên bảng (st.data_editor)
+    # Ép kiểu toàn bộ cột ngày thành SelectboxColumn để click mở dropdown chọn trực tiếp
     column_config = {
         "Nhân sự / Đội ngũ": st.column_config.TextColumn(
             "Nhân sự / Đội ngũ", disabled=True
@@ -309,12 +313,20 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
     }
     for d_col in day_columns:
         column_config[d_col] = st.column_config.SelectboxColumn(
-            d_col, options=["X", "/", "P", "v", "B"], required=True
+            d_col,
+            options=["X", "/", "P", "v", "B"],
+            required=True,
+            default="X",
         )
 
     st.markdown(
         f"### ✍️ Bảng Chấm Công Tháng {selected_month}/{selected_year}"
     )
+    st.info(
+        "💡 Kế toán bấm trực tiếp vào từng ô trong bảng dưới đây để mở danh sách"
+        " chọn ký hiệu (`X`, `/`, `P`, `v`, `B`):"
+    )
+
     edited_cham_cong = st.data_editor(
         df_cc_hien_tai,
         column_config=column_config,
@@ -347,7 +359,6 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
             elif val == "B":
                 co_bo_viec = True
 
-        # Xác định trạng thái cảnh báo
         trang_thai = "Bình thường (Đạt)"
         if co_bo_viec:
             trang_thai = (
@@ -371,26 +382,16 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
 
     df_tong_ket = pd.DataFrame(tong_ket_data)
 
-    # Hàm định dạng màu sắc bôi đỏ / bôi vàng theo yêu cầu
     def highlight_rows(row):
         if "CẢNH BÁO KỶ LUẬT" in row["Tình Trạng & Cảnh Báo"]:
-            return ["background-color: #fff3cd"] * len(
-                row
-            )  # Màu vàng cảnh báo
+            return ["background-color: #fff3cd"] * len(row)
         elif "CẢNH BÁO VI PHẠM" in row["Tình Trạng & Cảnh Báo"]:
-            return ["background-color: #f8d7da"] * len(
-                row
-            )  # Màu đỏ vi phạm
+            return ["background-color: #f8d7da"] * len(row)
         return [""] * len(row)
 
     st.dataframe(
         df_tong_ket.style.apply(highlight_rows, axis=1),
         use_container_width=True,
-    )
-    st.info(
-        "💡 Kế toán click vào các ô trong bảng bên trên để thay đổi ký hiệu chấm"
-        " công, hệ thống sẽ tự động tính toán tổng ngày công thực tế (gồm 'X'"
-        " và '/') cùng các mốc cảnh báo kỷ luật!"
     )
 
 # --- 3. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
