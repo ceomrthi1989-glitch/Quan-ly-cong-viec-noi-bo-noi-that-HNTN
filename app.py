@@ -33,10 +33,9 @@ DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
 ]
 
-# Biến toàn cục lưu trữ danh sách thành viên online
-if "ONLINE_USERS" not in globals():
-    global ONLINE_USERS
-    ONLINE_USERS = {}
+# Sử dụng st.session_state để lưu trữ danh sách thành viên online chung toàn cục qua các phiên
+if "online_members" not in st.session_state:
+    st.session_state.online_members = {}
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -68,7 +67,10 @@ if not st.session_state.logged_in:
             if mat_khau_chung == "hongnhung2020":
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
-                ONLINE_USERS[selected_account] = datetime.datetime.now()
+                # Ghi nhận trạng thái online kèm thời điểm hiện tại
+                st.session_state.online_members[selected_account] = (
+                    datetime.datetime.now()
+                )
                 st.success("Đăng nhập thành công!")
                 st.rerun()
             else:
@@ -79,27 +81,48 @@ if not st.session_state.logged_in:
 
     st.stop()
 
-# Cập nhật thời gian hoạt động của user đang đăng nhập
+# Cập nhật thời gian hoạt động liên tục của thành viên đang đăng nhập
 if st.session_state.current_user:
-    ONLINE_USERS[st.session_state.current_user] = datetime.datetime.now()
+    st.session_state.online_members[st.session_state.current_user] = (
+        datetime.datetime.now()
+    )
 
 # --- SAU KHI ĐĂNG NHẬP THÀNH CÔNG ---
 st.sidebar.success(f"👤 Xin chào: **{st.session_state.current_user}**")
 if st.sidebar.button("Đăng Xuất"):
-    if st.session_state.current_user in ONLINE_USERS:
-        del ONLINE_USERS[st.session_state.current_user]
+    if (
+        st.session_state.current_user
+        and st.session_state.current_user in st.session_state.online_members
+    ):
+        del st.session_state.online_members[st.session_state.current_user]
     st.session_state.logged_in = False
     st.session_state.current_user = None
     st.rerun()
 
-# Hiển thị danh sách thành viên đang trực tuyến trên Sidebar
+# Hiển thị danh sách thành viên đang trực tuyến trên Sidebar kèm nút làm mới
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🟢 Thành Viên Đang Trực Tuyến")
-if ONLINE_USERS:
-    for u_name in list(ONLINE_USERS.keys()):
-        st.sidebar.markdown(f"• {u_name}")
+
+# Lọc bỏ các tài khoản không hoạt động quá 15 phút để danh sách chính xác
+thoi_gian_hien_tai = datetime.datetime.now()
+active_users = []
+for u_name, last_active in list(st.session_state.online_members.items()):
+    if (thoi_gian_hien_tai - last_active).total_seconds() < 900:  # 15 phút
+        active_users.append(u_name)
+    else:
+        # Xóa nếu quá thời gian không tương tác
+        del st.session_state.online_members[u_name]
+
+if active_users:
+    st.sidebar.markdown(f"*(Đang có **{len(active_users)}** người online)*")
+    for u in active_users:
+        st.sidebar.markdown(f"🟢 {u}")
 else:
     st.sidebar.info("Chưa có thành viên nào online.")
+
+if st.sidebar.button("🔄 Làm Mới Danh Sách Online"):
+    st.rerun()
+
 st.sidebar.markdown("---")
 
 # Tiêu đề ứng dụng
@@ -288,18 +311,16 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
             index=datetime.date.today().month - 1,
         )
 
-    # Lấy số ngày trong tháng được chọn
     num_days = calendar.monthrange(selected_year, selected_month)[1]
     day_columns = [f"Ngày {d:02d}" for d in range(1, num_days + 1)]
 
-    # Khởi tạo dữ liệu chấm công cho tháng nếu chưa có trong session
     cham_cong_key = f"cc_{selected_year}_{selected_month}"
     if cham_cong_key not in st.session_state:
         data_cc = []
         for nv in DANH_SACH_NHAN_SU_CHINH_THUC:
             row_dict = {"Nhân sự / Đội ngũ": nv}
             for d_col in day_columns:
-                row_dict[d_col] = "X"  # Mặc định đi làm đủ công
+                row_dict[d_col] = "X"
             data_cc.append(row_dict)
         st.session_state[cham_cong_key] = pd.DataFrame(data_cc)
 
@@ -334,7 +355,6 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
     )
     st.session_state[cham_cong_key] = edited_cham_cong
 
-    # Tính toán tổng ngày công và kiểm tra điều kiện cảnh báo (Đỏ / Vàng)
     st.markdown("### 📊 Tổng Hợp Ngày Công Thực Tế & Cảnh Báo Kỷ Luật")
 
     tong_ket_data = []
@@ -388,7 +408,6 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
             return ["background-color: #f8d7da"] * len(row)
         return [""] * len(row)
 
-    # Hiển thị bảng tổng kết với định dạng số thập phân gọn gàng (như 29.5)
     st.dataframe(
         df_tong_ket.style.apply(highlight_rows, axis=1),
         column_config={
