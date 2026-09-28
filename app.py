@@ -33,7 +33,7 @@ DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
 ]
 
-# Sử dụng st.session_state để lưu trữ danh sách thành viên online chung toàn cục qua các phiên
+# Sử dụng st.session_state để lưu trữ danh sách thành viên online chung toàn cục
 if "online_members" not in st.session_state:
     st.session_state.online_members = {}
 
@@ -67,7 +67,6 @@ if not st.session_state.logged_in:
             if mat_khau_chung == "hongnhung2020":
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
-                # Ghi nhận trạng thái online kèm thời điểm hiện tại
                 st.session_state.online_members[selected_account] = (
                     datetime.datetime.now()
                 )
@@ -99,18 +98,16 @@ if st.sidebar.button("Đăng Xuất"):
     st.session_state.current_user = None
     st.rerun()
 
-# Hiển thị danh sách thành viên đang trực tuyến trên Sidebar kèm nút làm mới
+# Hiển thị danh sách thành viên đang trực tuyến trên Sidebar
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🟢 Thành Viên Đang Trực Tuyến")
 
-# Lọc bỏ các tài khoản không hoạt động quá 15 phút để danh sách chính xác
 thoi_gian_hien_tai = datetime.datetime.now()
 active_users = []
 for u_name, last_active in list(st.session_state.online_members.items()):
-    if (thoi_gian_hien_tai - last_active).total_seconds() < 900:  # 15 phút
+    if (thoi_gian_hien_tai - last_active).total_seconds() < 900:
         active_users.append(u_name)
     else:
-        # Xóa nếu quá thời gian không tương tác
         del st.session_state.online_members[u_name]
 
 if active_users:
@@ -131,7 +128,7 @@ st.markdown(
     "Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng Nhung Tây Nguyên"
 )
 
-# Khởi tạo dữ liệu mẫu cho công việc
+# Khởi tạo dữ liệu mẫu cho công việc (chuẩn định dạng dd/mm/yyyy)
 if "df_works" not in st.session_state:
     st.session_state.df_works = pd.DataFrame(
         {
@@ -155,10 +152,10 @@ if "df_works" not in st.session_state:
                 "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
             ],
             "Hạn Hoàn Thành": [
-                "2026-04-10",
-                "2026-04-05",
-                "2026-04-06",
-                "2026-04-08",
+                "10/04/2026",
+                "05/04/2026",
+                "06/04/2026",
+                "08/04/2026",
             ],
             "Trạng Thái": [
                 "Đang thực hiện",
@@ -228,7 +225,10 @@ if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
             )
             noi_dung_cv = st.text_area("Mô tả chi tiết công việc cần làm")
         with c_g2:
-            han_chot = st.date_input("Hạn hoàn thành (Deadline)")
+            han_chot_date = st.date_input("Hạn hoàn thành (Deadline)")
+            # Chuyển đổi ngày tháng sang dạng dd/mm/yyyy
+            han_chot_str = han_chot_date.strftime("%d/%m/%Y")
+
             tieu_chi_moi = st.text_area(
                 "Tiêu chí KPI chuẩn (VD: Đúng kích thước bản vẽ, không trầy xước...)"
             )
@@ -247,7 +247,7 @@ if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                         ],
                         "Nội Dung Công Việc": [noi_dung_cv],
                         "Người Thực Hiện": [nguoi_nhan],
-                        "Hạn Hoàn Thành": [str(han_chot)],
+                        "Hạn Hoàn Thành": [han_chot_str],
                         "Trạng Thái": ["Đang thực hiện"],
                         "Tiêu Chí KPI Chuẩn": [
                             tieu_chi_moi
@@ -266,7 +266,8 @@ if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                     [st.session_state.df_works, new_row], ignore_index=True
                 )
                 st.success(
-                    f"Đã giao việc và thiết lập KPI thành công cho **{nguoi_nhan}**!"
+                    f"Đã giao việc và thiết lập KPI thành công cho **{nguoi_nhan}**"
+                    f" (Hạn chót: {han_chot_str})!"
                 )
             else:
                 st.warning(
@@ -298,7 +299,6 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
         """
         )
 
-    # Chọn Tháng và Năm theo lịch
     col_cc1, col_cc2 = st.columns(2)
     with col_cc1:
         selected_year = st.selectbox(
@@ -340,7 +340,7 @@ elif menu == "📅 Bảng Chấm Công Tự Động":
         )
 
     st.markdown(
-        f"### ✍️ Bảng Chấm Công Tháng {selected_month}/{selected_year}"
+        f"### ✍️ Bảng Chấm Công Tháng {selected_month:02d}/{selected_year}"
     )
     st.info(
         "💡 Kế toán bấm trực tiếp vào từng ô trong bảng dưới đây để mở danh sách"
@@ -529,13 +529,13 @@ elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
         sub_bc = st.form_submit_button("Gửi Báo Cáo Hiện Trường")
         if sub_bc:
             if noi_dung_bc:
-                thoi_gian_hien_tai = (
-                    datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                thoi_gian_hien_tai_str = (
+                    datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
                 )
                 st.session_state.chat_reports.insert(
                     0,
                     {
-                        "thoi_gian": thoi_gian_hien_tai,
+                        "thoi_gian": thoi_gian_hien_tai_str,
                         "nguoi_gui": st.session_state.current_user,
                         "du_an": ten_du_an,
                         "noi_dung": noi_dung_bc,
@@ -581,7 +581,7 @@ elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
         if sub_chat:
             if noi_dung_chat:
                 thoi_gian_chat = datetime.datetime.now().strftime(
-                    "%Y-%m-%d %H:%M"
+                    "%d/%m/%Y %H:%M"
                 )
                 st.session_state.internal_messages.append(
                     {
