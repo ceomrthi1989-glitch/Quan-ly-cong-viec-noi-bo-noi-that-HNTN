@@ -6,11 +6,11 @@ import streamlit as st
 # Cấu hình giao diện
 st.set_page_config(
     page_title="HongNhungTN - Quản Lý Công Việc & KPI",
-    page_icon="assets/logo_hongnhung.png",  # Thay đường dẫn này bằng tên file/đường dẫn ảnh logo của bạn trên GitHub
+    page_icon="🏆",
     layout="wide",
 )
 
-# 1. Danh sách nhân sự chính thức của công ty
+# 1. Danh sách nhân sự chính thức của công ty (Dùng chung cho cả app)
 DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Trương Văn Thi (Giám Đốc - Mr. Thi)",
     (
@@ -98,10 +98,11 @@ if st.sidebar.button("Đăng Xuất"):
     st.session_state.current_user = None
     st.rerun()
 
-# Hiển thị danh sách thành viên đang trực tuyến trên Sidebar
+# --- HIỂN THỊ TRẠNG THÁI TẤT CẢ THÀNH VIÊN TRÊN SIDEBAR ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🟢 Thành Viên Đang Trực Tuyến")
+st.sidebar.markdown("### 🟢 Trạng Thái Thành Viên")
 
+# Lọc bỏ các tài khoản không hoạt động quá 15 phút
 thoi_gian_hien_tai = datetime.datetime.now()
 active_users = []
 for u_name, last_active in list(st.session_state.online_members.items()):
@@ -110,14 +111,19 @@ for u_name, last_active in list(st.session_state.online_members.items()):
     else:
         del st.session_state.online_members[u_name]
 
-if active_users:
-    st.sidebar.markdown(f"*(Đang có **{len(active_users)}** người online)*")
-    for u in active_users:
-        st.sidebar.markdown(f"🟢 {u}")
-else:
-    st.sidebar.info("Chưa có thành viên nào online.")
+st.sidebar.markdown(
+    f"*(Đang có **{len(active_users)}/{len(DANH_SACH_NHAN_SU_CHINH_THUC)}** người"
+    " online)*"
+)
 
-if st.sidebar.button("🔄 Làm Mới Danh Sách Online"):
+# Duyệt qua toàn bộ danh sách thành viên công ty để hiển thị chấm xanh/chấm đen tự động
+for member in DANH_SACH_NHAN_SU_CHINH_THUC:
+    if member in active_users:
+        st.sidebar.markdown(f"🟢 {member}")
+    else:
+        st.sidebar.markdown(f"⚫ {member}")
+
+if st.sidebar.button("🔄 Làm Mới Trạng Thái"):
     st.rerun()
 
 st.sidebar.markdown("---")
@@ -128,7 +134,7 @@ st.markdown(
     "Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng Nhung Tây Nguyên"
 )
 
-# Khởi tạo dữ liệu mẫu cho công việc (chuẩn định dạng dd/mm/yyyy)
+# Khởi tạo dữ liệu mẫu cho công việc
 if "df_works" not in st.session_state:
     st.session_state.df_works = pd.DataFrame(
         {
@@ -163,24 +169,6 @@ if "df_works" not in st.session_state:
                 "Hoàn thành",
                 "Đang thực hiện",
             ],
-            "Tiêu Chí KPI Chuẩn": [
-                "Đúng bản vẽ kỹ thuật, không trầy xước, bàn giao đúng hạn",
-                "Đo đạc chính xác 100%, có biên bản bàn giao mặt bằng",
-                "File CNC chính xác kích thước, tối ưu hóa phôi ván",
-                "Gia công đúng bản vẽ, không mẻ cạnh, an toàn lao động",
-            ],
-            "Điểm / Thưởng Phạt": [
-                "Thưởng +200k (Đúng hạn)",
-                "Đạt chuẩn 100 điểm",
-                "Đạt chuẩn 100 điểm",
-                "Đang đánh giá",
-            ],
-            "Nguyên Nhân Không Hoàn Thành": [
-                "Không có (Đang tiến hành)",
-                "Không có",
-                "Không có",
-                "Không có",
-            ],
         }
     )
 
@@ -199,19 +187,17 @@ st.sidebar.title("🛠️ Điều Hướng Quản Lý")
 menu = st.sidebar.radio(
     "Chọn Chức Năng:",
     [
-        "➕ Giao Việc Mới & Thiết Lập KPI",
+        "➕ Giao Việc Mới",
         "📅 Bảng Chấm Công Tự Động",
         "📊 Theo Dõi & Xác Nhận Công Việc",
         "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)",
         "💭 Phòng Chat Trao Đổi Công Việc Riêng",
-        "📋 Quản Lý & Xem Tiêu Chí KPI",
-        "⭐ Chấm Điểm & Thưởng/Phạt KPI",
     ],
 )
 
-# --- 1. GIAO VIỆC MỚI & THIẾT LẬP KPI ---
-if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
-    st.subheader("➕ Giao Việc Mới Kèm Bộ Tiêu Chí KPI Chuẩn")
+# --- 1. GIAO VIỆC MỚI ---
+if menu == "➕ Giao Việc Mới":
+    st.subheader("➕ Giao Việc Mới Cho Nhân Sự / Đội Thi Công")
     with st.form("form_giao_viec_kpi"):
         c_g1, c_g2 = st.columns(2)
         with c_g1:
@@ -223,20 +209,13 @@ if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                 "Chọn nhân sự / đội thi công phụ trách",
                 DANH_SACH_NHAN_SU_CHINH_THUC,
             )
-            noi_dung_cv = st.text_area("Mô tả chi tiết công việc cần làm")
         with c_g2:
             han_chot_date = st.date_input("Hạn hoàn thành (Deadline)")
-            # Chuyển đổi ngày tháng sang dạng dd/mm/yyyy
             han_chot_str = han_chot_date.strftime("%d/%m/%Y")
 
-            tieu_chi_moi = st.text_area(
-                "Tiêu chí KPI chuẩn (VD: Đúng kích thước bản vẽ, không trầy xước...)"
-            )
-            muc_thuong_phat = st.text_input(
-                "Quy định Thưởng/Phạt dự kiến (VD: Vượt tiến độ +200k, Trễ hạn -100k)"
-            )
+        noi_dung_cv = st.text_area("Mô tả chi tiết công việc cần làm")
 
-        submit_giao = st.form_submit_button("Xác Nhận Giao Việc & Tạo KPI")
+        submit_giao = st.form_submit_button("Xác Nhận Giao Việc")
         if submit_giao:
             if ma_v_moi and ten_cong_trinh_moi:
                 new_row = pd.DataFrame(
@@ -249,25 +228,14 @@ if menu == "➕ Giao Việc Mới & Thiết Lập KPI":
                         "Người Thực Hiện": [nguoi_nhan],
                         "Hạn Hoàn Thành": [han_chot_str],
                         "Trạng Thái": ["Đang thực hiện"],
-                        "Tiêu Chí KPI Chuẩn": [
-                            tieu_chi_moi
-                            if tieu_chi_moi
-                            else "Hoàn thành đúng yêu cầu kỹ thuật"
-                        ],
-                        "Điểm / Thưởng Phạt": [
-                            muc_thuong_phat
-                            if muc_thuong_phat
-                            else "Đang đánh giá"
-                        ],
-                        "Nguyên Nhân Không Hoàn Thành": ["Chưa có"],
                     }
                 )
                 st.session_state.df_works = pd.concat(
                     [st.session_state.df_works, new_row], ignore_index=True
                 )
                 st.success(
-                    f"Đã giao việc và thiết lập KPI thành công cho **{nguoi_nhan}**"
-                    f" (Hạn chót: {han_chot_str})!"
+                    f"Đã giao việc thành công cho **{nguoi_nhan}** (Hạn chót:"
+                    f" {han_chot_str})!"
                 )
             else:
                 st.warning(
@@ -452,13 +420,14 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
 
     st.dataframe(df_hien_thi, use_container_width=True)
 
-    st.markdown("### 🔄 Xác Nhận, Cập Nhật Trạng Thái & Nguyên Nhân Công Việc")
+    st.markdown("### 🔄 Xác Nhận & Cập Nhật Trạng Thái Công Việc")
     with st.form("form_update_cong_viec"):
         c_up1, c_up2 = st.columns(2)
         with c_up1:
             ma_viec_chon = st.selectbox(
                 "Chọn Mã Việc cần cập nhật", st.session_state.df_works["Mã Việc"]
             )
+        with c_up2:
             trang_thai_moi = st.selectbox(
                 "Cập nhật Trạng Thái mới",
                 [
@@ -467,10 +436,6 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
                     "Chờ duyệt nghiệm thu",
                     "Tạm hoãn",
                 ],
-            )
-        with c_up2:
-            nguyen_nhan_moi = st.text_area(
-                "Điền nguyên nhân không hoàn thành / Khó khăn phát sinh (nếu có):"
             )
 
         sub_update_nv = st.form_submit_button("Xác Nhận & Cập Nhật Công Việc")
@@ -482,10 +447,6 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
                 st.session_state.df_works.loc[idx, "Trạng Thái"] = (
                     trang_thai_moi
                 )
-                if nguyen_nhan_moi:
-                    st.session_state.df_works.loc[
-                        idx, "Nguyên Nhân Không Hoàn Thành"
-                    ] = nguyen_nhan_moi
                 st.success(
                     f"Đã cập nhật thành công trạng thái cho mã việc:"
                     f" {ma_viec_chon}"
@@ -601,97 +562,3 @@ elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
             f"**👤 {msg['nguoi_gui']}**  *({msg['thoi_gian']})*:\n> {msg['noi_dung']}"
         )
         st.markdown("---")
-
-# --- 6. QUẢN LÝ TIÊU CHÍ KPI ---
-elif menu == "📋 Quản Lý & Xem Tiêu Chí KPI":
-    st.subheader("📋 Danh Mục & Thiết Lập Tiêu Chí KPI Chuẩn Của Công Ty")
-    st.dataframe(
-        st.session_state.df_works[
-            [
-                "Mã Việc",
-                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất",
-                "Người Thực Hiện",
-                "Tiêu Chí KPI Chuẩn",
-                "Trạng Thái",
-            ]
-        ],
-        use_container_width=True,
-    )
-
-    st.markdown("### ✍️ Chỉnh Sửa Tiêu Chí KPI Cho Công Việc")
-    with st.form("form_sua_tieu_chi_kpi"):
-        c_tc1, c_tc2 = st.columns(2)
-        with c_tc1:
-            ma_v_tc = st.selectbox(
-                "Chọn Mã Việc cần đổi tiêu chí",
-                st.session_state.df_works["Mã Việc"],
-            )
-        with c_tc2:
-            tieu_chi_moi_nhap = st.text_area(
-                "Nhập nội dung Tiêu chí KPI chuẩn mới:"
-            )
-
-        sub_tc = st.form_submit_button("Cập Nhật Tiêu Chí KPI")
-        if sub_tc:
-            idx = st.session_state.df_works[
-                st.session_state.df_works["Mã Việc"] == ma_v_tc
-            ].index
-            if not idx.empty and tieu_chi_moi_nhap:
-                st.session_state.df_works.loc[
-                    idx, "Tiêu Chí KPI Chuẩn"
-                ] = tieu_chi_moi_nhap
-                st.success(
-                    f"Đã cập nhật tiêu chí KPI thành công cho mã việc: {ma_v_tc}"
-                )
-
-# --- 7. CHẤM ĐIỂM & THƯỞNG PHẠT KPI ---
-elif menu == "⭐ Chấm Điểm & Thưởng/Phạt KPI":
-    st.subheader(
-        "⭐ Quản Lý Chấm Điểm KPI, Mức Thưởng & Phạt Cho Từng Nhân Sự"
-    )
-    st.dataframe(
-        st.session_state.df_works[
-            [
-                "Mã Việc",
-                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất",
-                "Người Thực Hiện",
-                "Tiêu Chí KPI Chuẩn",
-                "Điểm / Thưởng Phạt",
-                "Nguyên Nhân Không Hoàn Thành",
-            ]
-        ],
-        use_container_width=True,
-    )
-
-    st.markdown("### ⚖️ Thực Hiện Chấm Điểm & Đánh Giá Thưởng/Phạt")
-    with st.form("form_cham_diem_kpi"):
-        c_k1, c_k2 = st.columns(2)
-        with c_k1:
-            ma_v_kpi = st.selectbox(
-                "Chọn Mã Việc để chấm điểm KPI",
-                st.session_state.df_works["Mã Việc"],
-            )
-        with c_k2:
-            danh_gia_thuong_phat = st.selectbox(
-                "Chọn Mức Đạt & Thưởng/Phạt tương ứng",
-                [
-                    "Đạt chuẩn xuất sắc (Thưởng +300k)",
-                    "Đạt chuẩn tốt (Thưởng +100k)",
-                    "Hoàn thành đúng hạn (Đạt 100 điểm)",
-                    "Trễ hạn / Lỗi nhỏ (Trừ -100k)",
-                    "Lỗi nặng / Hỏng vật tư (Trừ -500k hoặc đền bù)",
-                ],
-            )
-
-        sub_kpi = st.form_submit_button("Lưu Điểm & Thưởng/Phạt KPI")
-        if sub_kpi:
-            idx = st.session_state.df_works[
-                st.session_state.df_works["Mã Việc"] == ma_v_kpi
-            ].index
-            if not idx.empty:
-                st.session_state.df_works.loc[
-                    idx, "Điểm / Thưởng Phạt"
-                ] = danh_gia_thuong_phat
-                st.success(
-                    f"Đã lưu kết quả chấm điểm KPI cho mã việc: {ma_v_kpi}"
-                )
