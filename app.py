@@ -6,7 +6,7 @@ import streamlit as st
 # Cấu hình giao diện
 st.set_page_config(
     page_title="HongNhungTN - Quản Lý Công Việc & KPI",
-    page_icon="🏆",
+    page_icon="assets/logo_hongnhung.png",  # Thay đường dẫn này bằng tên file/đường dẫn ảnh logo của bạn trên GitHub
     layout="wide",
 )
 
