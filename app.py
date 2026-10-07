@@ -608,4 +608,157 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
                         st.warning(
                             f"Đã ghi nhận xác nhận của bạn cho mã việc"
                             f" {ma_viec_xn}. Vẫn còn nhân sự khác chưa xác"
-                            " nhận nên công việc vẫn ở
+                            " nhận nên công việc vẫn ở trạng thái **⏳ Chờ xác"
+                            " nhận đủ nhân sự**."
+                        )
+                st.rerun()
+        else:
+            st.info(
+                "Bạn hiện không có công việc nào được phân công trực tiếp cần"
+                " xác nhận."
+            )
+
+    st.markdown("---")
+    st.markdown("### 🔄 Cập Nhật Trạng Thái Tiến Độ Chung (Dành Cho Quản Lý)")
+    with st.form("form_update_cong_viec"):
+        c_up1, c_up2 = st.columns(2)
+        with c_up1:
+            ma_viec_chon = st.selectbox(
+                "Chọn Mã Việc cần cập nhật", st.session_state.df_works["Mã Việc"]
+            )
+        with c_up2:
+            trang_thai_moi = st.selectbox(
+                "Cập nhật Trạng Thái mới",
+                [
+                    "⏳ Chờ xác nhận đủ nhân sự",
+                    "Đang thực hiện",
+                    "Hoàn thành",
+                    "Chờ duyệt nghiệm thu",
+                    "Tạm hoãn",
+                ],
+            )
+
+        sub_update_nv = st.form_submit_button("Cập Nhật Trạng Thái")
+        if sub_update_nv:
+            idx = st.session_state.df_works[
+                st.session_state.df_works["Mã Việc"] == ma_viec_chon
+            ].index
+            if not idx.empty:
+                st.session_state.df_works.loc[idx, "Trạng Thái"] = (
+                    trang_thai_moi
+                )
+                st.success(
+                    f"Đã cập nhật thành công trạng thái cho mã việc:"
+                    f" {ma_viec_chon}"
+                )
+
+# --- 4. BÁO CÁO HIỆN TRƯỜNG ---
+elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
+    st.subheader(
+        "💬 Kênh Báo Cáo Công Việc Hàng Ngày, Gửi Hình Ảnh & Video Công Trình"
+    )
+
+    with st.form("form_bao_cao_ngay", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        with c1:
+            ten_nv = st.text_input(
+                "Nhân sự / Đội báo cáo",
+                value=st.session_state.current_user,
+                disabled=True,
+            )
+            ten_du_an = st.text_input(
+                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất (VD: Tủ bếp nhà anh"
+                " Nam)"
+            )
+        with c2:
+            loai_bc = st.selectbox(
+                "Loại báo cáo",
+                [
+                    "Báo cáo tiến độ xưởng mộc",
+                    "Báo cáo lắp đặt công trình",
+                    "Sự cố / Phát sinh cần xử lý",
+                ],
+            )
+
+        noi_dung_bc = st.text_area("Nội dung báo cáo chi tiết trong ngày")
+        uploaded_media = st.file_uploader(
+            "Đính kèm Hình ảnh / Video thực tế",
+            type=["png", "jpg", "jpeg", "mp4", "mov"],
+            accept_multiple_files=True,
+        )
+
+        sub_bc = st.form_submit_button("Gửi Báo Cáo Hiện Trường")
+        if sub_bc:
+            if noi_dung_bc:
+                thoi_gian_hien_tai_str = (
+                    datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+                )
+                st.session_state.chat_reports.insert(
+                    0,
+                    {
+                        "thoi_gian": thoi_gian_hien_tai_str,
+                        "nguoi_gui": st.session_state.current_user,
+                        "du_an": ten_du_an,
+                        "noi_dung": noi_dung_bc,
+                        "loai": loai_bc,
+                        "media": uploaded_media,
+                    },
+                )
+                st.success("Đã gửi báo cáo hiện trường thành công!")
+            else:
+                st.warning("Vui lòng điền nội dung báo cáo.")
+
+    st.markdown("---")
+    st.markdown("### 📢 Dòng Thời Gian Báo Cáo Trực Tuyến")
+    for report in st.session_state.chat_reports:
+        with st.container():
+            st.info(
+                f"👤 **{report['nguoi_gui']}** | 📁 **Công trình/Hạng mục:**"
+                f" {report.get('du_an', 'Chung')} | ⏰ *{report['thoi_gian']}*"
+                f" | 🏷️ *[{report['loai']}]*"
+            )
+            st.write(f"💬 **Nội dung:** {report['noi_dung']}")
+            if "media" in report and report["media"]:
+                cols_img = st.columns(len(report["media"]))
+                for i, file in enumerate(report["media"]):
+                    with cols_img[i]:
+                        if file.type.startswith("image"):
+                            st.image(
+                                file,
+                                caption=f"Ảnh: {file.name}",
+                                use_container_width=True,
+                            )
+                        elif file.type.startswith("video"):
+                            st.video(file)
+            st.markdown("---")
+
+# --- 5. PHÒNG CHAT TRAO ĐỔI CÔNG VIỆC RIÊNG ---
+elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
+    st.subheader("💭 Kênh Nhắn Tin & Trao Đổi Công Việc Nội Bộ (Group Chat)")
+
+    with st.form("form_chat_noi_bo", clear_on_submit=True):
+        noi_dung_chat = st.text_input("Nhập nội dung trao đổi công việc...")
+        sub_chat = st.form_submit_button("Gửi Tin Nhắn")
+        if sub_chat:
+            if noi_dung_chat:
+                thoi_gian_chat = datetime.datetime.now().strftime(
+                    "%d/%m/%Y %H:%M"
+                )
+                st.session_state.internal_messages.append(
+                    {
+                        "thoi_gian": thoi_gian_chat,
+                        "nguoi_gui": st.session_state.current_user,
+                        "noi_dung": noi_dung_chat,
+                    }
+                )
+                st.rerun()
+            else:
+                st.warning("Vui lòng nhập nội dung tin nhắn.")
+
+    st.markdown("---")
+    st.markdown("### 💬 Lịch Sử Trao Đổi Tin Nhắn")
+    for msg in reversed(st.session_state.internal_messages):
+        st.markdown(
+            f"**👤 {msg['nguoi_gui']}**  *({msg['thoi_gian']})*:\n> {msg['noi_dung']}"
+        )
+        st.markdown("---")
