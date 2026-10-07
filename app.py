@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# 1. Danh sách nhân sự chính thức của công ty (Dùng chung cho cả app)
+# 1. Danh sách nhân sự chính thức của công ty
 DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Trương Văn Thi (Giám Đốc - Mr. Thi)",
     (
@@ -98,9 +98,8 @@ if st.sidebar.button("Đăng Xuất"):
     st.session_state.current_user = None
     st.rerun()
 
-# --- HIỂN THỊ TRẠNG THÁI TẤT CẢ THÀNH VIÊN TRÊN SIDEBAR ---
+# --- THANH TRẠNG THÁI THÀNH VIÊN DẠNG RÚT GỌN (EXPANDER) ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🟢 Trạng Thái Thành Viên")
 
 # Lọc bỏ các tài khoản không hoạt động quá 15 phút
 thoi_gian_hien_tai = datetime.datetime.now()
@@ -111,20 +110,20 @@ for u_name, last_active in list(st.session_state.online_members.items()):
     else:
         del st.session_state.online_members[u_name]
 
-st.sidebar.markdown(
-    f"*(Đang có **{len(active_users)}/{len(DANH_SACH_NHAN_SU_CHINH_THUC)}** người"
-    " online)*"
-)
+# Sử dụng st.sidebar.expander để tạo mục rút gọn có mũi tên đóng/mở
+with st.sidebar.expander(
+    f"🟢 Trạng Thái Thành Viên ({len(active_users)}/{len(DANH_SACH_NHAN_SU_CHINH_THUC)}"
+    " online)"
+):
+    st.markdown("---")
+    for member in DANH_SACH_NHAN_SU_CHINH_THUC:
+        if member in active_users:
+            st.markdown(f"🟢 {member}")
+        else:
+            st.markdown(f"⚫ {member}")
 
-# Duyệt qua toàn bộ danh sách thành viên công ty để hiển thị chấm xanh/chấm đen tự động
-for member in DANH_SACH_NHAN_SU_CHINH_THUC:
-    if member in active_users:
-        st.sidebar.markdown(f"🟢 {member}")
-    else:
-        st.sidebar.markdown(f"⚫ {member}")
-
-if st.sidebar.button("🔄 Làm Mới Trạng Thái"):
-    st.rerun()
+    if st.button("🔄 Làm Mới Trạng Thái"):
+        st.rerun()
 
 st.sidebar.markdown("---")
 
