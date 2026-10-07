@@ -33,9 +33,9 @@ DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
 ]
 
-# Sử dụng st.session_state để lưu trữ danh sách thành viên online chung toàn cục
-if "online_members" not in st.session_state:
-    st.session_state.online_members = {}
+# Khởi tạo kho lưu trữ danh sách thành viên online toàn cục dùng chung cho ứng dụng
+if "online_members_dict" not in st.session_state:
+    st.session_state.online_members_dict = {}
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -67,7 +67,8 @@ if not st.session_state.logged_in:
             if mat_khau_chung == "hongnhung2020":
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
-                st.session_state.online_members[selected_account] = (
+                # Ghi nhận thời điểm đăng nhập hiện tại của thành viên
+                st.session_state.online_members_dict[selected_account] = (
                     datetime.datetime.now()
                 )
                 st.success("Đăng nhập thành công!")
@@ -80,37 +81,40 @@ if not st.session_state.logged_in:
 
     st.stop()
 
-# Cập nhật thời gian hoạt động liên tục của thành viên đang đăng nhập
-if st.session_state.current_user:
-    st.session_state.online_members[st.session_state.current_user] = (
+# Cập nhật thời gian hoạt động liên tục (heartbeat) cho tài khoản đang online
+current_username = st.session_state.current_user
+if current_username:
+    st.session_state.online_members_dict[current_username] = (
         datetime.datetime.now()
     )
 
 # --- SAU KHI ĐĂNG NHẬP THÀNH CÔNG ---
-st.sidebar.success(f"👤 Xin chào: **{st.session_state.current_user}**")
+st.sidebar.success(f"👤 Xin chào: **{current_username}**")
 if st.sidebar.button("Đăng Xuất"):
     if (
-        st.session_state.current_user
-        and st.session_state.current_user in st.session_state.online_members
+        current_username
+        and current_username in st.session_state.online_members_dict
     ):
-        del st.session_state.online_members[st.session_state.current_user]
+        del st.session_state.online_members_dict[current_username]
     st.session_state.logged_in = False
     st.session_state.current_user = None
     st.rerun()
 
-# --- THANH TRẠNG THÁI THÀNH VIÊN DẠNG RÚT GỌN (EXPANDER) ---
+# --- THANH TRẠNG THÁI THÀNH VIÊN DẠNG RÚT GỌN (TỰ ĐỘNG NHẬN DIỆN) ---
 st.sidebar.markdown("---")
 
-# Lọc bỏ các tài khoản không hoạt động quá 15 phút
+# Lọc các thành viên có hoạt động trong vòng 10 phút gần đây
 thoi_gian_hien_tai = datetime.datetime.now()
 active_users = []
-for u_name, last_active in list(st.session_state.online_members.items()):
-    if (thoi_gian_hien_tai - last_active).total_seconds() < 900:
+for u_name, last_active in list(
+    st.session_state.online_members_dict.items()
+):
+    if (thoi_gian_hien_tai - last_active).total_seconds() < 600:  # 10 phút
         active_users.append(u_name)
     else:
-        del st.session_state.online_members[u_name]
+        del st.session_state.online_members_dict[u_name]
 
-# Sử dụng st.sidebar.expander để tạo mục rút gọn có mũi tên đóng/mở
+# Hiển thị menu thu gọn (expander) với số lượng online cập nhật chính xác theo thực tế
 with st.sidebar.expander(
     f"🟢 Trạng Thái Thành Viên ({len(active_users)}/{len(DANH_SACH_NHAN_SU_CHINH_THUC)}"
     " online)"
@@ -118,9 +122,9 @@ with st.sidebar.expander(
     st.markdown("---")
     for member in DANH_SACH_NHAN_SU_CHINH_THUC:
         if member in active_users:
-            st.markdown(f"🟢 {member}")
+            st.sidebar.markdown(f"🟢 {member}")
         else:
-            st.markdown(f"⚫ {member}")
+            st.sidebar.markdown(f"⚫ {member}")
 
     if st.button("🔄 Làm Mới Trạng Thái"):
         st.rerun()
