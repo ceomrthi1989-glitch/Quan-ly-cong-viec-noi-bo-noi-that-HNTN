@@ -34,7 +34,7 @@ DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
 ]
 
-# Sử dụng tệp tạm thời chia sẻ trạng thái qua lại giữa các phiên đám mây
+# Sử dụng tệp tạm thời chia sẻ trạng thái online giữa các phiên đám mây
 ONLINE_STATE_FILE = "company_active_members.json"
 
 
@@ -49,7 +49,6 @@ def doc_trang_thai_online():
                 now = datetime.datetime.now()
                 for k, v in raw_data.items():
                     t = datetime.datetime.fromisoformat(v)
-                    # Nếu hoạt động trong vòng 15 phút gần nhất thì giữ lại
                     if (now - t).total_seconds() < 900:
                         res[k] = t
                 return res
@@ -100,7 +99,6 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
 
-                # Cập nhật ngay vào danh sách online chung
                 current_dict = doc_trang_thai_online()
                 current_dict[selected_account] = datetime.datetime.now()
                 ghi_trang_thai_online(current_dict)
@@ -115,7 +113,6 @@ if not st.session_state.logged_in:
 
     st.stop()
 
-# Cập nhật thời gian hoạt động (heartbeat) liên tục cho tài khoản đang mở app
 current_username = st.session_state.current_user
 if current_username:
     current_dict = doc_trang_thai_online()
@@ -136,11 +133,9 @@ if st.sidebar.button("Đăng Xuất"):
 # --- THANH TRẠNG THÁI THÀNH VIÊN ĐỒNG BỘ THỜI GIAN THỰC ---
 st.sidebar.markdown("---")
 
-# Lấy danh sách thành viên đang online từ kho lưu trữ chung
 active_dict = doc_trang_thai_online()
 active_users_list = list(active_dict.keys())
 
-# Hiển thị menu thu gọn với số lượng online đồng bộ chính xác trên mọi thiết bị
 with st.sidebar.expander(
     f"🟢 Trạng Thái Thành Viên ({len(active_users_list)}/{len(DANH_SACH_NHAN_SU_CHINH_THUC)}"
     " online)"
@@ -163,7 +158,7 @@ st.markdown(
     "Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng Nhung Tây Nguyên"
 )
 
-# Khởi tạo dữ liệu mẫu cho công việc
+# Khởi tạo dữ liệu mẫu cho công việc (bao gồm thêm cột hỗ trợ)
 if "df_works" not in st.session_state:
     st.session_state.df_works = pd.DataFrame(
         {
@@ -180,11 +175,17 @@ if "df_works" not in st.session_state:
                 "Thiết kế file cắt ván CNC tủ quần áo",
                 "Vận hành máy CNC gia công cắt ván",
             ],
-            "Người Thực Hiện": [
+            "Nhân Sự Chính": [
                 "Đội trần tường 1 (Lập + Huy)",
                 "Trương Thất Lập (Nhân viên kỹ thuật)",
                 "Hồ Thậm Hải (Thiết kế ra file CNC)",
                 "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
+            ],
+            "Nhân Sự Hỗ Trợ": [
+                "Khúc Gia Bảo (Nhân viên kỹ thuật)",
+                "Không có",
+                "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
+                "Hồ Thậm Hải (Thiết kế ra file CNC)",
             ],
             "Hạn Hoàn Thành": [
                 "10/04/2026",
@@ -205,6 +206,20 @@ if "Dự Án" in st.session_state.df_works.columns:
     st.session_state.df_works = st.session_state.df_works.rename(
         columns={"Dự Án": "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"}
     )
+
+# Tương thích với các bản cũ nếu thiếu cột Nhân Sự Hỗ Trợ
+if "Nhân Sự Chính" not in st.session_state.df_works.columns:
+    if "Người Thực Hiện" in st.session_state.df_works.columns:
+        st.session_state.df_works[
+            "Nhân Sự Chính"
+        ] = st.session_state.df_works["Người Thực Hiện"]
+    else:
+        st.session_state.df_works["Nhân Sự Chính"] = (
+            "Trương Văn Thi (Giám Đốc - Mr. Thi)"
+        )
+
+if "Nhân Sự Hỗ Trợ" not in st.session_state.df_works.columns:
+    st.session_state.df_works["Nhân Sự Hỗ Trợ"] = "Không có"
 
 if "chat_reports" not in st.session_state:
     st.session_state.chat_reports = []
@@ -234,9 +249,14 @@ if menu == "➕ Giao Việc Mới":
             ten_cong_trinh_moi = st.text_input(
                 "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"
             )
-            nguoi_nhan = st.selectbox(
-                "Chọn nhân sự / đội thi công phụ trách",
+            # ĐÃ CẬP NHẬT TÊN VÀ BỔ SUNG Ô CHỌN HỖ TRỢ
+            nguoi_nhan_chinh = st.selectbox(
+                "Nhân sự phụ trách chính / Đội thi công phụ trách",
                 DANH_SACH_NHAN_SU_CHINH_THUC,
+            )
+            nguoi_nhan_ho_tro = st.selectbox(
+                "Nhân sự (phụ) hỗ trợ / Đội thi công hỗ trợ",
+                ["Không có"] + DANH_SACH_NHAN_SU_CHINH_THUC,
             )
         with c_g2:
             han_chot_date = st.date_input("Hạn hoàn thành (Deadline)")
@@ -254,7 +274,8 @@ if menu == "➕ Giao Việc Mới":
                             ten_cong_trinh_moi
                         ],
                         "Nội Dung Công Việc": [noi_dung_cv],
-                        "Người Thực Hiện": [nguoi_nhan],
+                        "Nhân Sự Chính": [nguoi_nhan_chinh],
+                        "Nhân Sự Hỗ Trợ": [nguoi_nhan_ho_tro],
                         "Hạn Hoàn Thành": [han_chot_str],
                         "Trạng Thái": ["Đang thực hiện"],
                     }
@@ -263,8 +284,8 @@ if menu == "➕ Giao Việc Mới":
                     [st.session_state.df_works, new_row], ignore_index=True
                 )
                 st.success(
-                    f"Đã giao việc thành công cho **{nguoi_nhan}** (Hạn chót:"
-                    f" {han_chot_str})!"
+                    f"Đã giao việc thành công cho **{nguoi_nhan_chinh}** (Hỗ trợ:"
+                    f" {nguoi_nhan_ho_tro} - Hạn chót: {han_chot_str})!"
                 )
             else:
                 st.warning(
@@ -444,7 +465,8 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
         ]
     if loc_nhan_su != "Tất cả":
         df_hien_thi = df_hien_thi[
-            df_hien_thi["Người Thực Hiện"] == loc_nhan_su
+            (df_hien_thi["Nhân Sự Chính"] == loc_nhan_su)
+            | (df_hien_thi["Nhân Sự Hỗ Trợ"] == loc_nhan_su)
         ]
 
     st.dataframe(df_hien_thi, use_container_width=True)
