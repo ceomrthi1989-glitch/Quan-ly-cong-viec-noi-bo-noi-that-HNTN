@@ -1,5 +1,6 @@
 import calendar
 import datetime
+import os
 import pandas as pd
 import streamlit as st
 
@@ -33,7 +34,41 @@ DANH_SACH_NHAN_SU_CHINH_THUC = [
     "Đội lắp đặt 3 tăng cường (Huấn + Huy + Lập)",
 ]
 
-# Sử dụng st.session_state cho ứng dụng
+# Sử dụng tệp tạm thời chia sẻ trạng thái qua lại giữa các phiên đám mây
+ONLINE_STATE_FILE = "company_active_members.json"
+
+
+def doc_trang_thai_online():
+    import json
+
+    if os.path.exists(ONLINE_STATE_FILE):
+        try:
+            with open(ONLINE_STATE_FILE, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+                res = {}
+                now = datetime.datetime.now()
+                for k, v in raw_data.items():
+                    t = datetime.datetime.fromisoformat(v)
+                    # Nếu hoạt động trong vòng 15 phút gần nhất thì giữ lại
+                    if (now - t).total_seconds() < 900:
+                        res[k] = t
+                return res
+        except Exception:
+            return {}
+    return {}
+
+
+def ghi_trang_thai_online(data_dict):
+    import json
+
+    try:
+        serializable = {k: v.isoformat() for k, v in data_dict.items()}
+        with open(ONLINE_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(serializable, f)
+    except Exception:
+        pass
+
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.current_user = None
@@ -46,8 +81,8 @@ if not st.session_state.logged_in:
         " Nhung Tây Nguyên"
     )
     st.markdown(
-        "Vui lòng chọn tên của bạn và nhập mật khẩu nội bộ để truy cập ứng"
-        " dụng."
+        "Vui lòng chọn đúng tên của bạn và nhập mật khẩu nội bộ để truy cập"
+        " ứng dụng."
     )
 
     with st.form("login_form"):
@@ -64,6 +99,12 @@ if not st.session_state.logged_in:
             if mat_khau_chung == "hongnhung2020":
                 st.session_state.logged_in = True
                 st.session_state.current_user = selected_account
+
+                # Cập nhật ngay vào danh sách online chung
+                current_dict = doc_trang_thai_online()
+                current_dict[selected_account] = datetime.datetime.now()
+                ghi_trang_thai_online(current_dict)
+
                 st.success("Đăng nhập thành công!")
                 st.rerun()
             else:
@@ -74,11 +115,20 @@ if not st.session_state.logged_in:
 
     st.stop()
 
+# Cập nhật thời gian hoạt động (heartbeat) liên tục cho tài khoản đang mở app
 current_username = st.session_state.current_user
+if current_username:
+    current_dict = doc_trang_thai_online()
+    current_dict[current_username] = datetime.datetime.now()
+    ghi_trang_thai_online(current_dict)
 
 # --- SAU KHI ĐĂNG NHẬP THÀNH CÔNG ---
 st.sidebar.success(f"👤 Xin chào: **{current_username}**")
 if st.sidebar.button("Đăng Xuất"):
+    current_dict = doc_trang_thai_online()
+    if current_username and current_username in current_dict:
+        del current_dict[current_username]
+        ghi_trang_thai_online(current_dict)
     st.session_state.logged_in = False
     st.session_state.current_user = None
     st.rerun()
@@ -86,30 +136,23 @@ if st.sidebar.button("Đăng Xuất"):
 # --- THANH TRẠNG THÁI THÀNH VIÊN ĐỒNG BỘ THỜI GIAN THỰC ---
 st.sidebar.markdown("---")
 
-# Mô phỏng danh sách thành viên online trực tiếp từ phiên đăng nhập thực tế của hệ thống
-# Để đảm bảo tất cả các thiết bị cùng thấy nhau, ta lưu các thành viên đang hoạt động vào session/query params chung
-if "active_members_list" not in st.session_state:
-    st.session_state.active_members_list = []
+# Lấy danh sách thành viên đang online từ kho lưu trữ chung
+active_dict = doc_trang_thai_online()
+active_users_list = list(active_dict.keys())
 
-# Đảm bảo user hiện tại luôn có trong danh sách online
-if current_username not in st.session_state.active_members_list:
-    st.session_state.active_members_list.append(current_username)
-
-active_users = st.session_state.active_members_list
-
-# Hiển thị menu thu gọn với số lượng online đồng bộ chính xác
+# Hiển thị menu thu gọn với số lượng online đồng bộ chính xác trên mọi thiết bị
 with st.sidebar.expander(
-    f"🟢 Trạng Thái Thành Viên ({len(active_users)}/{len(DANH_SACH_NHAN_SU_CHINH_THUC)}"
+    f"🟢 Trạng Thái Thành Viên ({len(active_users_list)}/{len(DANH_SACH_NHAN_SU_CHINH_THUC)}"
     " online)"
 ):
     st.markdown("---")
     for member in DANH_SACH_NHAN_SU_CHINH_THUC:
-        if member in active_users:
+        if member in active_users_list:
             st.sidebar.markdown(f"🟢 {member}")
         else:
             st.sidebar.markdown(f"⚫ {member}")
 
-    if st.button("🔄 Làm Mới Trạng Thái"):
+    if st.button("🔄 Làm Mới Danh Sách Trực Tuyến"):
         st.rerun()
 
 st.sidebar.markdown("---")
