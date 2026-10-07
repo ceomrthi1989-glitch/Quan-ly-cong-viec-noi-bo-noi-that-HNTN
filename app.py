@@ -525,49 +525,46 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
             | (df_hien_thi["Hỗ Trợ 2"] == loc_nhan_su)
         ]
 
-    # Hiển thị bảng dữ liệu đầy đủ chi tiết công việc
+    # Hiển thị bảng dữ liệu tổng hợp
     st.dataframe(df_hien_thi, use_container_width=True)
 
     st.markdown("---")
     st.markdown("### ✅ Xác Nhận Nhận Việc Của Nhân Sự / Đội Thi Công")
     st.info(
-        f"💡 Bạn đang đăng nhập với tư cách: **{current_username}**. Nếu bạn có tên"
-        " trong phân công công việc dưới đây chưa xác nhận, hãy chọn mã việc"
-        " để xem mô tả chi tiết và bấm xác nhận!"
+        f"💡 Bạn đang đăng nhập với tư cách: **{current_username}**."
     )
 
-    # Lọc ra các công việc mà user hiện tại có liên quan
+    # Lọc ra tất cả các công việc mà user hiện tại được phân công
     assigned_works_df = st.session_state.df_works[
         (st.session_state.df_works["Nhân Sự Chính"] == current_username)
         | (st.session_state.df_works["Hỗ Trợ 1"] == current_username)
         | (st.session_state.df_works["Hỗ Trợ 2"] == current_username)
     ]
-    assigned_works = assigned_works_df["Mã Việc"].tolist()
 
-    if assigned_works:
-        ma_viec_xn = st.selectbox(
-            "Chọn Mã Việc bạn cần bấm xác nhận", assigned_works
+    if not assigned_works_df.empty:
+        st.markdown(
+            "📋 **DANH SÁCH TẤT CẢ MÔ TẢ CÔNG VIỆC CẦN XÁC NHẬN TRONG NGÀY:**"
         )
 
-        # Trích xuất ngay thông tin chi tiết công việc của mã việc được chọn
-        selected_work_row = assigned_works_df[
-            assigned_works_df["Mã Việc"] == ma_viec_xn
-        ].iloc[0]
+        # HIỂN THỊ TỰ ĐỘNG TOÀN BỘ MÔ TẢ CHI TIẾT CỦA CÁC CÔNG VIỆC LIÊN QUAN
+        for idx_row, work_row in assigned_works_df.iterrows():
+            st.info(
+                f"📌 **Mã Việc:** `{work_row['Mã Việc']}` | **Hạng Mục:** {work_row['Tên Công trình/Sản phẩm/Hạng mục Nội Thất']}\n\n"
+                f"✍️ **Người Giao Việc:** {work_row['Nhân Sự Giao Việc']}\n\n"
+                f"🛠️ **Phụ trách chính:** {work_row['Nhân Sự Chính']} | "
+                f"**Hỗ trợ 1:** {work_row['Hỗ Trợ 1']} | "
+                f"**Hỗ trợ 2:** {work_row['Hỗ Trợ 2']}\n\n"
+                f"⏰ **Hạn Hoàn Thành (Deadline):** {work_row['Hạn Hoàn Thành']}\n\n"
+                f"📝 **Nôị Dung Mô Tả Chi Tiết:**\n"
+                f"> **{work_row['Nội Dung Công Việc']}**"
+            )
 
-        # HIỂN THỊ BẢNG MÔ TẢ CHI TIẾT CÔNG VIỆC LẬP TỨC
-        st.markdown("#### 📋 Chi Tiết Nội Dung Công Việc Cần Thực Hiện:")
-        st.info(
-            f"📌 **Công trình / Hạng mục:** {selected_work_row['Tên Công trình/Sản phẩm/Hạng mục Nội Thất']}\n\n"
-            f"✍️ **Người Giao Việc:** {selected_work_row['Nhân Sự Giao Việc']}\n\n"
-            f"🛠️ **Nhân sự chính:** {selected_work_row['Nhân Sự Chính']} | "
-            f"**Hỗ trợ 1:** {selected_work_row['Hỗ Trợ 1']} | "
-            f"**Hỗ trợ 2:** {selected_work_row['Hỗ Trợ 2']}\n\n"
-            f"⏰ **Hạn Hoàn Thành (Deadline):** {selected_work_row['Hạn Hoàn Thành']}\n\n"
-            f"📝 **Mô Tả Chi Tiết Nội Dung Cần Làm:**\n"
-            f"> **{selected_work_row['Nội Dung Công Việc']}**"
-        )
-
+        st.markdown("---")
+        assigned_works = assigned_works_df["Mã Việc"].tolist()
         with st.form("form_xac_nhan_nhan_viec"):
+            ma_viec_xn = st.selectbox(
+                "Chọn Mã Việc bạn muốn gửi xác nhận:", assigned_works
+            )
             han_hd = st.radio(
                 "Hành động xác nhận của bạn:",
                 ["✅ Xác Nhận Nhận Việc", "❌ Từ chối / Cần trao đổi"],
@@ -599,7 +596,7 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
                             idx, "Xác Nhận Hỗ Trợ 2"
                         ] = ket_qua_text
 
-                    # Kiểm tra điều kiện xác nhận tất cả
+                    # Kiểm tra điều kiện xác nhận tất cả nhân sự
                     r_chinh = str(
                         st.session_state.df_works.loc[idx, "Xác Nhận Chính"]
                     )
@@ -633,7 +630,7 @@ elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
     else:
         st.info(
             "Bạn hiện không có công việc nào được phân công trực tiếp cần"
-            " xác nhận."
+            " xác nhận trong ngày."
         )
 
     st.markdown("---")
