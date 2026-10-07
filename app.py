@@ -158,7 +158,7 @@ st.markdown(
     "Chào Mừng Bạn Gia Nhập Đội Ngũ Công Ty TNHH Nội Thất Hồng Nhung Tây Nguyên"
 )
 
-# Khởi tạo dữ liệu mẫu cho công việc (bao gồm thêm cột hỗ trợ)
+# Khởi tạo dữ liệu mẫu cho công việc (có 2 hỗ trợ)
 if "df_works" not in st.session_state:
     st.session_state.df_works = pd.DataFrame(
         {
@@ -181,12 +181,13 @@ if "df_works" not in st.session_state:
                 "Hồ Thậm Hải (Thiết kế ra file CNC)",
                 "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
             ],
-            "Nhân Sự Hỗ Trợ": [
+            "Hỗ Trợ 1": [
                 "Khúc Gia Bảo (Nhân viên kỹ thuật)",
                 "Không có",
                 "Đào Minh Mẫn (Phụ trách đứng máy CNC)",
                 "Hồ Thậm Hải (Thiết kế ra file CNC)",
             ],
+            "Hỗ Trợ 2": ["Không có", "Không có", "Không có", "Không có"],
             "Hạn Hoàn Thành": [
                 "10/04/2026",
                 "05/04/2026",
@@ -207,7 +208,7 @@ if "Dự Án" in st.session_state.df_works.columns:
         columns={"Dự Án": "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"}
     )
 
-# Tương thích với các bản cũ nếu thiếu cột Nhân Sự Hỗ Trợ
+# Tương thích ngược với các phiên bản dữ liệu cũ
 if "Nhân Sự Chính" not in st.session_state.df_works.columns:
     if "Người Thực Hiện" in st.session_state.df_works.columns:
         st.session_state.df_works[
@@ -218,8 +219,16 @@ if "Nhân Sự Chính" not in st.session_state.df_works.columns:
             "Trương Văn Thi (Giám Đốc - Mr. Thi)"
         )
 
-if "Nhân Sự Hỗ Trợ" not in st.session_state.df_works.columns:
-    st.session_state.df_works["Nhân Sự Hỗ Trợ"] = "Không có"
+if "Hỗ Trợ 1" not in st.session_state.df_works.columns:
+    if "Nhân Sự Hỗ Trợ" in st.session_state.df_works.columns:
+        st.session_state.df_works["Hỗ Trợ 1"] = st.session_state.df_works[
+            "Nhân Sự Hỗ Trợ"
+        ]
+    else:
+        st.session_state.df_works["Hỗ Trợ 1"] = "Không có"
+
+if "Hỗ Trợ 2" not in st.session_state.df_works.columns:
+    st.session_state.df_works["Hỗ Trợ 2"] = "Không có"
 
 if "chat_reports" not in st.session_state:
     st.session_state.chat_reports = []
@@ -249,367 +258,19 @@ if menu == "➕ Giao Việc Mới":
             ten_cong_trinh_moi = st.text_input(
                 "Tên Công trình/Sản phẩm/Hạng mục Nội Thất"
             )
-            # ĐÃ CẬP NHẬT TÊN VÀ BỔ SUNG Ô CHỌN HỖ TRỢ
+
+            # CẬP NHẬT CÁC TAP LỰA CHỌN NHÂN SỰ
             nguoi_nhan_chinh = st.selectbox(
                 "Nhân sự phụ trách chính / Đội thi công phụ trách",
                 DANH_SACH_NHAN_SU_CHINH_THUC,
             )
-            nguoi_nhan_ho_tro = st.selectbox(
-                "Nhân sự (phụ) hỗ trợ / Đội thi công hỗ trợ",
+            nguoi_ho_tro_1 = st.selectbox(
+                "Nhân sự (phụ) hỗ trợ 1 / Đội thi công hỗ trợ 1",
+                ["Không có"] + DANH_SACH_NHAN_SU_CHINH_THUC,
+            )
+            nguoi_ho_tro_2 = st.selectbox(
+                "Nhân sự (phụ) hỗ trợ 2 / Đội thi công hỗ trợ 2",
                 ["Không có"] + DANH_SACH_NHAN_SU_CHINH_THUC,
             )
         with c_g2:
-            han_chot_date = st.date_input("Hạn hoàn thành (Deadline)")
-            han_chot_str = han_chot_date.strftime("%d/%m/%Y")
-
-        noi_dung_cv = st.text_area("Mô tả chi tiết công việc cần làm")
-
-        submit_giao = st.form_submit_button("Xác Nhận Giao Việc")
-        if submit_giao:
-            if ma_v_moi and ten_cong_trinh_moi:
-                new_row = pd.DataFrame(
-                    {
-                        "Mã Việc": [ma_v_moi],
-                        "Tên Công trình/Sản phẩm/Hạng mục Nội Thất": [
-                            ten_cong_trinh_moi
-                        ],
-                        "Nội Dung Công Việc": [noi_dung_cv],
-                        "Nhân Sự Chính": [nguoi_nhan_chinh],
-                        "Nhân Sự Hỗ Trợ": [nguoi_nhan_ho_tro],
-                        "Hạn Hoàn Thành": [han_chot_str],
-                        "Trạng Thái": ["Đang thực hiện"],
-                    }
-                )
-                st.session_state.df_works = pd.concat(
-                    [st.session_state.df_works, new_row], ignore_index=True
-                )
-                st.success(
-                    f"Đã giao việc thành công cho **{nguoi_nhan_chinh}** (Hỗ trợ:"
-                    f" {nguoi_nhan_ho_tro} - Hạn chót: {han_chot_str})!"
-                )
-            else:
-                st.warning(
-                    "Vui lòng điền đầy đủ Mã việc và Tên công trình/hạng mục"
-                    " nội thất."
-                )
-
-# --- 2. BẢNG CHẤM CÔNG TỰ ĐỘNG ---
-elif menu == "📅 Bảng Chấm Công Tự Động":
-    st.subheader(
-        "📅 Bảng Chấm Công Tự Động & Quy Định Giờ Làm Việc Nội Bộ"
-    )
-
-    with st.expander("📌 Xem Quy Định Chấm Công & Giờ Làm Việc Công Ty"):
-        st.markdown(
-            """
-        * **Ký hiệu chấm công:** 
-          * `X`: Đi làm đủ công (1 ngày)
-          * `/`: Đi làm nửa ngày (0.5 ngày)
-          * `P`: Vắng có phép 
-          * `v`: Vắng không phép
-          * `B`: Bỏ việc giữa chừng
-        * **Cảnh báo tự động:**
-          * 🔴 **Tên bôi đỏ:** Vắng không phép `v` > 2 ngày HOẶC Vắng có phép `P` > 6 ngày trong tháng.
-          * 🟡 **Tên bôi vàng:** Có ký hiệu `B` (Bỏ việc giữa chừng - Cảnh báo kỷ luật).
-        * **Quy định giờ làm việc & Xử lý đi trễ:**
-          * **Ca Sáng:** 07h30 đến 11h30 (Báo công trước 07h30, trễ dưới 10 phút châm chước, trễ từ 15 phút trở lên phạt trừ **100k** sung quỹ văn hóa nội bộ).
-          * **Ca Chiều:** 13h30 đến 17h30 (Báo công trước 13h30, trễ dưới 10 phút châm chước, trễ từ 15 phút trở lên phạt trừ **100k** sung quỹ văn hóa nội bộ).
-        """
-        )
-
-    col_cc1, col_cc2 = st.columns(2)
-    with col_cc1:
-        selected_year = st.selectbox(
-            "Chọn Năm", range(datetime.date.today().year, 2024, -1)
-        )
-    with col_cc2:
-        selected_month = st.selectbox(
-            "Chọn Tháng",
-            range(1, 13),
-            index=datetime.date.today().month - 1,
-        )
-
-    num_days = calendar.monthrange(selected_year, selected_month)[1]
-    day_columns = [f"Ngày {d:02d}" for d in range(1, num_days + 1)]
-
-    cham_cong_key = f"cc_{selected_year}_{selected_month}"
-    if cham_cong_key not in st.session_state:
-        data_cc = []
-        for nv in DANH_SACH_NHAN_SU_CHINH_THUC:
-            row_dict = {"Nhân sự / Đội ngũ": nv}
-            for d_col in day_columns:
-                row_dict[d_col] = "X"
-            data_cc.append(row_dict)
-        st.session_state[cham_cong_key] = pd.DataFrame(data_cc)
-
-    df_cc_hien_tai = st.session_state[cham_cong_key]
-
-    column_config = {
-        "Nhân sự / Đội ngũ": st.column_config.TextColumn(
-            "Nhân sự / Đội ngũ", disabled=True
-        )
-    }
-    for d_col in day_columns:
-        column_config[d_col] = st.column_config.SelectboxColumn(
-            d_col,
-            options=["X", "/", "P", "v", "B"],
-            required=True,
-            default="X",
-        )
-
-    st.markdown(
-        f"### ✍️ Bảng Chấm Công Tháng {selected_month:02d}/{selected_year}"
-    )
-    st.info(
-        "💡 Kế toán bấm trực tiếp vào từng ô trong bảng dưới đây để mở danh sách"
-        " chọn ký hiệu (`X`, `/`, `P`, `v`, `B`):"
-    )
-
-    edited_cham_cong = st.data_editor(
-        df_cc_hien_tai,
-        column_config=column_config,
-        use_container_width=True,
-        key=f"editor_{cham_cong_key}",
-    )
-    st.session_state[cham_cong_key] = edited_cham_cong
-
-    st.markdown("### 📊 Tổng Hợp Ngày Công Thực Tế & Cảnh Báo Kỷ Luật")
-
-    tong_ket_data = []
-    for index, row in edited_cham_cong.iterrows():
-        nv_name = row["Nhân sự / Đội ngũ"]
-        cong_thuc_te = 0.0
-        dem_v_khong_phep = 0
-        dem_p_co_phep = 0
-        co_bo_viec = False
-
-        for d_col in day_columns:
-            val = str(row[d_col]).strip()
-            if val == "X":
-                cong_thuc_te += 1.0
-            elif val == "/":
-                cong_thuc_te += 0.5
-            elif val == "v":
-                dem_v_khong_phep += 1
-            elif val == "P":
-                dem_p_co_phep += 1
-            elif val == "B":
-                co_bo_viec = True
-
-        trang_thai = "Bình thường (Đạt)"
-        if co_bo_viec:
-            trang_thai = (
-                "🟡 CẢNH BÁO KỶ LUẬT: Bỏ việc giữa chừng (Bôi vàng)"
-            )
-        elif dem_v_khong_phep > 2 or dem_p_co_phep > 6:
-            trang_thai = (
-                "🔴 CẢNH BÁO VI PHẠM: Quá hạn vắng cho phép/không phép (Bôi"
-                " đỏ)"
-            )
-
-        tong_ket_data.append(
-            {
-                "Nhân sự / Đội ngũ": nv_name,
-                "Tổng Ngày Công Thực Tế": float(cong_thuc_te),
-                "Vắng Không Phép (v)": int(dem_v_khong_phep),
-                "Vắng Có Phép (P)": int(dem_p_co_phep),
-                "Tình Trạng & Cảnh Báo": trang_thai,
-            }
-        )
-
-    df_tong_ket = pd.DataFrame(tong_ket_data)
-
-    def highlight_rows(row):
-        if "CẢNH BÁO KỶ LUẬT" in row["Tình Trạng & Cảnh Báo"]:
-            return ["background-color: #fff3cd"] * len(row)
-        elif "CẢNH BÁO VI PHẠM" in row["Tình Trạng & Cảnh Báo"]:
-            return ["background-color: #f8d7da"] * len(row)
-        return [""] * len(row)
-
-    st.dataframe(
-        df_tong_ket.style.apply(highlight_rows, axis=1),
-        column_config={
-            "Tổng Ngày Công Thực Tế": st.column_config.NumberColumn(
-                "Tổng Ngày Công Thực Tế", format="%.1f 🗓️"
-            )
-        },
-        use_container_width=True,
-    )
-
-# --- 3. THEO DÕI & XÁC NHẬN CÔNG VIỆC ---
-elif menu == "📊 Theo Dõi & Xác Nhận Công Việc":
-    st.subheader("📊 Bảng Theo Dõi Tiến Độ & Xác Nhận Công Việc Toàn Công Ty")
-
-    col_f1, col_f2 = st.columns(2)
-    with col_f1:
-        loc_trang_thai = st.selectbox(
-            "Lọc theo trạng thái",
-            [
-                "Tất cả",
-                "Đang thực hiện",
-                "Hoàn thành",
-                "Chờ duyệt nghiệm thu",
-                "Tạm hoãn",
-            ],
-        )
-    with col_f2:
-        loc_nhan_su = st.selectbox(
-            "Lọc theo nhân sự / đội thi công",
-            ["Tất cả"] + DANH_SACH_NHAN_SU_CHINH_THUC,
-        )
-
-    df_hien_thi = st.session_state.df_works
-    if loc_trang_thai != "Tất cả":
-        df_hien_thi = df_hien_thi[
-            df_hien_thi["Trạng Thái"] == loc_trang_thai
-        ]
-    if loc_nhan_su != "Tất cả":
-        df_hien_thi = df_hien_thi[
-            (df_hien_thi["Nhân Sự Chính"] == loc_nhan_su)
-            | (df_hien_thi["Nhân Sự Hỗ Trợ"] == loc_nhan_su)
-        ]
-
-    st.dataframe(df_hien_thi, use_container_width=True)
-
-    st.markdown("### 🔄 Xác Nhận & Cập Nhật Trạng Thái Công Việc")
-    with st.form("form_update_cong_viec"):
-        c_up1, c_up2 = st.columns(2)
-        with c_up1:
-            ma_viec_chon = st.selectbox(
-                "Chọn Mã Việc cần cập nhật", st.session_state.df_works["Mã Việc"]
-            )
-        with c_up2:
-            trang_thai_moi = st.selectbox(
-                "Cập nhật Trạng Thái mới",
-                [
-                    "Đang thực hiện",
-                    "Hoàn thành",
-                    "Chờ duyệt nghiệm thu",
-                    "Tạm hoãn",
-                ],
-            )
-
-        sub_update_nv = st.form_submit_button("Xác Nhận & Cập Nhật Công Việc")
-        if sub_update_nv:
-            idx = st.session_state.df_works[
-                st.session_state.df_works["Mã Việc"] == ma_viec_chon
-            ].index
-            if not idx.empty:
-                st.session_state.df_works.loc[idx, "Trạng Thái"] = (
-                    trang_thai_moi
-                )
-                st.success(
-                    f"Đã cập nhật thành công trạng thái cho mã việc:"
-                    f" {ma_viec_chon}"
-                )
-
-# --- 4. BÁO CÁO HIỆN TRƯỜNG ---
-elif menu == "💬 Báo Cáo Hiện Trường (Hình Ảnh / Video)":
-    st.subheader(
-        "💬 Kênh Báo Cáo Công Việc Hàng Ngày, Gửi Hình Ảnh & Video Công Trình"
-    )
-
-    with st.form("form_bao_cao_ngay", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            ten_nv = st.text_input(
-                "Nhân sự / Đội báo cáo",
-                value=st.session_state.current_user,
-                disabled=True,
-            )
-            ten_du_an = st.text_input(
-                "Tên Công trình/Sản phẩm/Hạng mục Nội Thất (VD: Tủ bếp nhà anh"
-                " Nam)"
-            )
-        with c2:
-            loai_bc = st.selectbox(
-                "Loại báo cáo",
-                [
-                    "Báo cáo tiến độ xưởng mộc",
-                    "Báo cáo lắp đặt công trình",
-                    "Sự cố / Phát sinh cần xử lý",
-                ],
-            )
-
-        noi_dung_bc = st.text_area("Nội dung báo cáo chi tiết trong ngày")
-        uploaded_media = st.file_uploader(
-            "Đính kèm Hình ảnh / Video thực tế",
-            type=["png", "jpg", "jpeg", "mp4", "mov"],
-            accept_multiple_files=True,
-        )
-
-        sub_bc = st.form_submit_button("Gửi Báo Cáo Hiện Trường")
-        if sub_bc:
-            if noi_dung_bc:
-                thoi_gian_hien_tai_str = (
-                    datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-                )
-                st.session_state.chat_reports.insert(
-                    0,
-                    {
-                        "thoi_gian": thoi_gian_hien_tai_str,
-                        "nguoi_gui": st.session_state.current_user,
-                        "du_an": ten_du_an,
-                        "noi_dung": noi_dung_bc,
-                        "loai": loai_bc,
-                        "media": uploaded_media,
-                    },
-                )
-                st.success("Đã gửi báo cáo hiện trường thành công!")
-            else:
-                st.warning("Vui lòng điền nội dung báo cáo.")
-
-    st.markdown("---")
-    st.markdown("### 📢 Dòng Thời Gian Báo Cáo Trực Tuyến")
-    for report in st.session_state.chat_reports:
-        with st.container():
-            st.info(
-                f"👤 **{report['nguoi_gui']}** | 📁 **Công trình/Hạng mục:**"
-                f" {report.get('du_an', 'Chung')} | ⏰ *{report['thoi_gian']}*"
-                f" | 🏷️ *[{report['loai']}]*"
-            )
-            st.write(f"💬 **Nội dung:** {report['noi_dung']}")
-            if "media" in report and report["media"]:
-                cols_img = st.columns(len(report["media"]))
-                for i, file in enumerate(report["media"]):
-                    with cols_img[i]:
-                        if file.type.startswith("image"):
-                            st.image(
-                                file,
-                                caption=f"Ảnh: {file.name}",
-                                use_container_width=True,
-                            )
-                        elif file.type.startswith("video"):
-                            st.video(file)
-            st.markdown("---")
-
-# --- 5. PHÒNG CHAT TRAO ĐỔI CÔNG VIỆC RIÊNG ---
-elif menu == "💭 Phòng Chat Trao Đổi Công Việc Riêng":
-    st.subheader("💭 Kênh Nhắn Tin & Trao Đổi Công Việc Nội Bộ (Group Chat)")
-
-    with st.form("form_chat_noi_bo", clear_on_submit=True):
-        noi_dung_chat = st.text_input("Nhập nội dung trao đổi công việc...")
-        sub_chat = st.form_submit_button("Gửi Tin Nhắn")
-        if sub_chat:
-            if noi_dung_chat:
-                thoi_gian_chat = datetime.datetime.now().strftime(
-                    "%d/%m/%Y %H:%M"
-                )
-                st.session_state.internal_messages.append(
-                    {
-                        "thoi_gian": thoi_gian_chat,
-                        "nguoi_gui": st.session_state.current_user,
-                        "noi_dung": noi_dung_chat,
-                    }
-                )
-                st.rerun()
-            else:
-                st.warning("Vui lòng nhập nội dung tin nhắn.")
-
-    st.markdown("---")
-    st.markdown("### 💬 Lịch Sử Trao Đổi Tin Nhắn")
-    for msg in reversed(st.session_state.internal_messages):
-        st.markdown(
-            f"**👤 {msg['nguoi_gui']}**  *({msg['thoi_gian']})*:\n> {msg['noi_dung']}"
-        )
-        st.markdown("---")
+            han_chot_date =
